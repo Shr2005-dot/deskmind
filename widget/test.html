@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeskMind Widget Test</title>
+    <style>
+      body { font-family: sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Client Website Simulation</h1>
+    <p>This page simulates a client's website embedding the DeskMind widget.</p>
+    <p>The widget should appear in the bottom-right corner.</p>
+
+    <script>
+      window.DeskMindConfig = {
+        botId: "6e9d0767-1c95-48c7-a08c-b1becd67d9f1",
+        apiUrl: "http://localhost:8000"
+      };
+    </script>
+    <script src="./dist/widget.iife.js"></script>
+  </body>
+</html>
