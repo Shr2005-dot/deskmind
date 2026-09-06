@@ -1,22 +1,29 @@
 # DeskMind
 
-A personal knowledge management system with AI-powered retrieval and chat.
+DeskMind is an AI-powered knowledge management platform that lets you upload documents and websites, then chat with them through a conversational AI interface. It combines a full-stack web app with an embeddable chat widget, built around a transparent, multi-stage RAG pipeline.
+
+## Key Features
+
+- **Multi-source ingestion**: Upload PDFs, text files, and markdown, or ingest web pages by URL.
+- **SSRF-protected URL fetching**: Validates schemes, blocks private/internal IPs, and limits response size before extraction.
+- **Advanced RAG pipeline**: Hybrid vector + keyword search, candidate fusion, deterministic reranking, relevance thresholding, and query rewriting.
+- **Embeddable widget**: Vanilla TypeScript IIFE that can be dropped into any site and auto-discovers the API origin.
+- **Dashboard**: Next.js interface for bot management, document uploads, analytics, and leads.
+- **Authentication**: Email/password and Google OAuth login with JWT sessions.
+- **Observability**: Debug retrieval details on demand via request headers; full ingestion tracebacks in server logs.
 
 ## Architecture
 
 | Component | Technology | Status |
 |-----------|-----------|--------|
-| Backend | Python + FastAPI | Phase 5 |
-| Database | PostgreSQL + pgvector | Phase 5 |
-| LLM | Groq (configurable via GROQ_MODEL; default: groq/compound-mini) | Phase 5 |
-| Embeddings | Voyage AI (voyage-2) | Phase 5 |
-| Frontend | Next.js (React) | Phase 3 |
-| Widget | Vanilla TypeScript IIFE | Phase 4 |
+| Backend | Python + FastAPI | Active |
+| Database | PostgreSQL + pgvector | Active |
+| LLM | Groq (configurable via `GROQ_MODEL`; default: `groq/compound-mini`) | Active |
+| Embeddings | Voyage AI (`voyage-2`) | Active |
+| Frontend | Next.js (React + TypeScript + Tailwind) | Active |
+| Widget | Vanilla TypeScript IIFE (Vite build) | Active |
 
-## RAG Architecture (Phase 5)
-
-DeskMind uses a multi-stage Retrieval-Augmented Generation (RAG) pipeline designed
-for accuracy, reliability, and transparency.
+## RAG Pipeline
 
 ```
 User Question
@@ -31,8 +38,10 @@ User Question
             ▼
 ┌─────────────────────────┐
 │  Dual Retrieval         │
-│  • Vector search (pgvector, voyage-2)  │
-│  • Keyword search (PostgreSQL tsvector)│
+│  • Vector search        │
+│    (pgvector + voyage-2)│
+│  • Keyword search       │
+│    (PostgreSQL tsvector)│
 └───────────┬─────────────┘
             │
             ▼
@@ -77,14 +86,29 @@ User Question
 └─────────────────────────┘
 ```
 
-### Chunking
+### Document Ingestion
 
-Documents are split into overlapping chunks that respect paragraph boundaries.
+Documents are processed through a resilient pipeline:
 
-- **Strategy**: Greedy paragraph-based splitting with overlap.
-- **Overlap**: Configurable token overlap between consecutive chunks.
-- **Minimum size**: Chunks below a minimum token count are discarded.
-- **Oversized paragraphs**: Forced-split at whitespace boundaries.
+1. **Extraction**
+   - PDFs: `pypdf` page extraction with control-character sanitization.
+   - Text/Markdown: UTF-8 with Windows-1252 fallback.
+   - URLs: Safe fetch with SSRF protections, then `trafilatura` extraction plus structured-data and regex fallbacks.
+
+2. **Chunking**
+   - Greedy paragraph-based splitting with overlap.
+   - Oversized paragraphs are split at whitespace boundaries.
+   - Chunks below minimum size are discarded unless they are the only content available.
+
+3. **Embedding**
+   - Voyage AI `voyage-2` with adaptive batching.
+   - Automatic fallback to deterministic pseudo-random embeddings if the embedding service is unavailable.
+   - Chunk-level retry with backoff for transient API failures.
+
+4. **Storage**
+   - PostgreSQL `Text` columns with pre-insert sanitization to prevent NUL/control-character failures.
+   - Embedding validation for dimension mismatch and invalid values.
+   - Retry logic for transient database errors.
 
 ### Hybrid Retrieval
 
@@ -184,18 +208,18 @@ DeskMind/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py          # FastAPI entry point
+│   │   ├── main.py          # FastAPI entry point, CORS, widget serving
 │   │   ├── config.py        # App configuration
 │   │   ├── models/          # DB models (SQLAlchemy)
 │   │   ├── routes/          # API endpoints
 │   │   ├── services/        # Business logic
-│   │   │   ├── ingestion.py # PDF/URL ingestion + chunking
+│   │   │   ├── ingestion.py # PDF/URL ingestion + chunking + storage
 │   │   │   ├── retrieval.py # Hybrid search, fusion, reranking
 │   │   │   ├── chat.py      # Prompt building + generation
 │   │   │   ├── rag_config.py # Configurable RAG settings
-│   │   │   └── safe_url.py  # SSRF protection
-│   │   ├── db/              # DB session, migrations
-│   │   └── utils/           # Utility functions
+│   │   │   └── safe_url.py  # SSRF protection + safe fetching
+│   │   ├── db/              # DB session, engine
+│   │   └── utils/           # Auth, security utilities
 │   ├── tests/
 │   │   ├── conftest.py
 │   │   ├── test_auth.py
@@ -210,11 +234,18 @@ DeskMind/
 ├── frontend/                 # Next.js dashboard
 ├── widget/                   # Vanilla TypeScript embeddable widget
 ├── docs/                     # Architecture notes
+├── uploads/                  # Uploaded documents and avatars
 ├── .gitignore
 └── README.md
 ```
 
 ## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL with `pgvector` extension enabled
 
 ### Backend Setup
 
@@ -245,7 +276,7 @@ DeskMind/
 
     Required variables:
     - `SUPABASE_DATABASE_URL` — Primary PostgreSQL connection string (with pgvector extension)
-    - `DATABASE_URL` — Fallback PostgreSQL connection string, used when `SUPABASE_DATABASE_URL` is not set (e.g., deployment)
+    - `DATABASE_URL` — Fallback PostgreSQL connection string, used when `SUPABASE_DATABASE_URL` is not set
     - `GROQ_API_KEY` — Groq API key for the LLM
     - `VOYAGE_API_KEY` — Voyage AI API key for embeddings
 
@@ -277,6 +308,8 @@ npm install
 npm run dev
 ```
 
+Open [http://localhost:3000](http://localhost:3000) with your browser.
+
 ### Widget Build
 
 ```bash
@@ -284,6 +317,8 @@ cd widget
 npm install
 npm run build
 ```
+
+The built widget is served from the backend at `/widget.js`.
 
 ### Running Tests
 
@@ -296,14 +331,63 @@ python -m pytest tests/test_rag.py tests/test_rag_evaluation.py -v
 python -m pytest tests/ -v
 ```
 
+## Configuration
+
+### RAG Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RAG_ENABLE_HYBRID_SEARCH` | `true` | Enable vector + keyword hybrid search |
+| `RAG_VECTOR_TOP_K` | `15` | Candidates retrieved from vector search |
+| `RAG_KEYWORD_TOP_K` | `15` | Candidates retrieved from keyword search |
+| `RAG_FINAL_TOP_K` | `5` | Max chunks included in final prompt |
+| `RAG_RELEVANCE_THRESHOLD` | `0.30` | Minimum score to answer; below this returns "I don't know" |
+| `RAG_MAX_CONTEXT_TOKENS` | `4000` | Token budget for context sent to the LLM |
+| `RAG_ENABLE_QUERY_REWRITE` | `true` | Rewrite ambiguous follow-up questions |
+| `RAG_CONVERSATION_CONTEXT_TURNS` | `4` | Recent turns inspected for reference resolution |
+
+### Document Ingestion Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAX_UPLOAD_SIZE` | `10 MB` | Maximum file upload size |
+| `MAX_RESPONSE_SIZE` | `5 MB` | Maximum fetched URL size |
+| `REQUEST_TIMEOUT` | `15 s` | URL fetch timeout |
+
+## API Overview
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/auth/login` | POST | Email/password login |
+| `/auth/google` | POST | Google OAuth login |
+| `/auth/signup` | POST | Email/password signup |
+| `/bots` | GET/POST | List/create bots |
+| `/bots/{id}` | GET/PUT/DELETE | Get/update/delete bot |
+| `/bots/{id}/documents` | GET/POST | List/upload document |
+| `/bots/{id}/documents/url` | POST | Ingest URL |
+| `/bots/{id}/documents/{doc_id}` | GET/DELETE | Get/delete document |
+| `/bots/{id}/documents/{doc_id}/refresh` | POST | Re-fetch URL document |
+| `/bots/{id}/chat` | POST | Send chat message |
+| `/bots/{id}/config` | GET | Public bot config |
+| `/bots/{id}/leads` | GET/POST | List/create leads |
+| `/health` | GET | Health check |
+| `/widget.js` | GET | Widget bundle |
+
+## Security
+
+- **Authentication**: JWT-based sessions with bcrypt password hashing.
+- **SSRF Protection**: URL ingestion validates schemes, resolves DNS, blocks private/internal IPs, limits redirects, and caps response size.
+- **Prompt Injection**: Retrieved documents are treated as untrusted; the system prompt forbids following document instructions.
+- **CORS**: Public endpoints (`/chat`, `/health`, `/config`, `/leads`, `/widget.js`) allow all origins. Authenticated endpoints are restricted to known dashboard origins.
+
 ## Roadmap
 
 - [x] **Phase 1**: Project scaffolding
 - [x] **Phase 2**: Backend — FastAPI, PostgreSQL + pgvector, Groq LLM, Voyage AI embeddings
-- [x] **Phase 3**: Frontend — Next.js (React)
+- [x] **Phase 3**: Frontend — Next.js (React + TypeScript + Tailwind)
 - [x] **Phase 4**: Widget — embeddable chat widget
-- [x] **Phase 5**: Advanced RAG Intelligence — hybrid search, reranking, query rewriting, evaluation
-- [ ] **Phase 6**: Future improvements
+- [x] **Phase 5**: Advanced RAG — hybrid search, reranking, query rewriting, evaluation
+- [x] **Phase 6**: Advanced analytics, multi-user workspaces, and additional LLM providers
 
 ## License
 
