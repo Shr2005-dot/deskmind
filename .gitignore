@@ -71,3 +71,17 @@ logs/
 
 # Google signing-certs disk cache (backend/app/routes/auth.py)
 .google_certs_cache.json
+uploads/*
+!uploads/.gitkeep
+
+# Local debug / diagnostic artifacts (session leftovers, never commit)
+/_*.txt
+/_*.py
+/_*.ps1
+/_*.log
+/_*.json
+/sample.pdf
+/server_pid.txt
+backend/uploads/
+backend/_*.py
+backend/_*.txt

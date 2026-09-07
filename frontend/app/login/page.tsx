@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { googleAuth, loginWithPassword, guestLogin } from "@/lib/api";
+import { googleAuth, loginWithPassword, guestLogin, getApiErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { AuthLogo } from "@/components/branding/AuthLogo";
 import { Input } from "@/components/ui/Input";
@@ -27,10 +27,6 @@ export default function LoginPage() {
     router.replace("/dashboard");
   };
 
-  const errorMessage = (err: unknown, fallback: string) =>
-    (err as { response?: { data?: { detail?: string } } })?.response?.data
-      ?.detail || (err instanceof Error ? err.message : fallback);
-
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
       toast.error("Google sign-in failed");
@@ -40,7 +36,7 @@ export default function LoginPage() {
     try {
       applyLogin(await googleAuth(credentialResponse.credential));
     } catch (err: unknown) {
-      toast.error(errorMessage(err, "Login failed"));
+      toast.error(getApiErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -56,7 +52,7 @@ export default function LoginPage() {
     try {
       applyLogin(await loginWithPassword(email.trim(), password));
     } catch (err: unknown) {
-      toast.error(errorMessage(err, "Login failed"));
+      toast.error(getApiErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -72,7 +68,7 @@ export default function LoginPage() {
     try {
       applyLogin(await guestLogin(email.trim(), password));
     } catch (err: unknown) {
-      toast.error(errorMessage(err, "Login failed"));
+      toast.error(getApiErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

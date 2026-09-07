@@ -1,10 +1,12 @@
 from fastapi import FastAPI, status
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.staticfiles import StaticFiles
 
 import logging
+import os
 from pathlib import Path
 
 # Surface application logs (including ingestion tracebacks) in the console
@@ -35,6 +37,7 @@ RESTRICTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "https://deskmind-theta.vercel.app"
 ]
 
 
@@ -83,6 +86,26 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SelectiveCORSMiddleware)
 
 
+# ---------------------------------------------------------------------------
+# Database outages
+#
+# The managed Postgres (Neon) suspends idle computes and wakes them on demand;
+# while it is starting up (or during transient connection drops) queries raise
+# SQLAlchemy errors. Those used to bubble up as a generic 500 "Internal server
+# error", which told users nothing. Return a truthful 503 so the UI can tell
+# the user to simply retry in a moment.
+# ---------------------------------------------------------------------------
+@app.exception_handler(SQLAlchemyError)
+async def database_unavailable_handler(request, exc: SQLAlchemyError):
+    logging.getLogger(__name__).exception("Database error during request")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={
+            "detail": "Database is temporarily unavailable. Please try again in a moment."
+        },
+    )
+
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
@@ -109,7 +132,7 @@ app.include_router(activity.router)
 # from its own script origin.
 # ---------------------------------------------------------------------------
 WIDGET_JS_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "widget" / "dist" / "widget.iife.js"
+    Path(__file__).resolve().parent.parent / "widget" / "dist" / "widget.iife.js"
 )
 
 
@@ -125,7 +148,10 @@ def widget_js():
 
 # ---------------------------------------------------------------------------
 # Uploaded bot avatars
+#
+# Defaults to a folder next to the app; override with AVATARS_DIR for
+# platforms with a different writable path (e.g. /tmp on ephemeral hosts).
 # ---------------------------------------------------------------------------
-AVATARS_DIR = Path(__file__).resolve().parent.parent.parent / "uploads" / "avatars"
+AVATARS_DIR = Path(os.getenv("AVATARS_DIR", str(Path(__file__).resolve().parent.parent / "uploads" / "avatars")))
 AVATARS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads/avatars", StaticFiles(directory=AVATARS_DIR), name="bot-avatars")

@@ -387,7 +387,7 @@ python -m pytest tests/ -v
 - [x] **Phase 3**: Frontend — Next.js (React + TypeScript + Tailwind)
 - [x] **Phase 4**: Widget — embeddable chat widget
 - [x] **Phase 5**: Advanced RAG — hybrid search, reranking, query rewriting, evaluation
-- [x] **Phase 6**: Advanced analytics, multi-user workspaces, and additional LLM providers
+- [ ] **Phase 6**: Advanced analytics, multi-user workspaces, and additional LLM providers
 
 ## License
 

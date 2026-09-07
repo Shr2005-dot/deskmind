@@ -44,6 +44,42 @@ api.interceptors.response.use(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Friendly API error messages
+//
+// Axios rejects with a bare "Network Error" and NO ``response`` object when
+// the backend is unreachable (server not started, wrong NEXT_PUBLIC_API_URL,
+// CORS blocking the origin). Showing that raw string to users is confusing —
+// surface an actionable message instead. Backend-provided ``detail`` strings
+// (e.g. "Account not created. Please sign up first.") are always preferred,
+// and FastAPI 422 validation payloads (``detail`` as an array) are flattened.
+// ---------------------------------------------------------------------------
+export function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
+
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) =>
+          typeof item === "object" && item !== null && "msg" in item
+            ? String((item as { msg: unknown }).msg)
+            : "",
+        )
+        .filter(Boolean);
+      if (messages.length) {
+        return messages.join("; ");
+      }
+    }
+    if (!err.response) {
+      return `Cannot reach the DeskMind server at ${API_BASE_URL}. Make sure the backend is running, then try again.`;
+    }
+  }
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
 // Auth
 export interface User {
   id: string;

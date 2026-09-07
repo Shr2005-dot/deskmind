@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { googleSignup, guestSignup } from "@/lib/api";
+import { googleSignup, guestSignup, getApiErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { AuthLogo } from "@/components/branding/AuthLogo";
 import { Input } from "@/components/ui/Input";
@@ -47,10 +47,7 @@ export default function SignupPage() {
       const data = await googleSignup(credentialResponse.credential, password);
       applyLogin(data);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || (err instanceof Error ? err.message : "Signup failed");
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, "Signup failed"));
     } finally {
       setLoading(false);
     }
@@ -79,10 +76,7 @@ export default function SignupPage() {
       const data = await guestSignup(name.trim(), email.trim(), password);
       applyLogin(data);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || (err instanceof Error ? err.message : "Signup failed");
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, "Signup failed"));
     } finally {
       setLoading(false);
     }
