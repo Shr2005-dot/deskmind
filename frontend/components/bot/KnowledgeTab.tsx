@@ -104,8 +104,12 @@ function StatusBadge({ status }: { status: string }) {
     failed: "Failed",
     processing: "Processing",
   };
+  // Detailed failure statuses look like "failed: chunking (website returned
+  // an error (status 403))" — show them in red even though they are not the
+  // bare "failed" key.
+  const isFailed = status.startsWith("failed");
   return (
-    <Badge variant={variantMap[status] || "default"}>
+    <Badge variant={variantMap[status] || (isFailed ? "error" : "default")}>
       {labelMap[status] || status}
     </Badge>
   );
@@ -549,14 +553,14 @@ export function KnowledgeTab({ botId }: KnowledgeTabProps) {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-0.5">
-                            {doc.source_type === "url" && doc.status === "ready" && (
+                            {doc.source_type === "url" && doc.status !== "processing" && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRefresh(doc)}
                                 disabled={isRefreshing}
                                 className="!p-1.5 text-gray-400 hover:text-primary-600"
-                                title="Refresh page"
+                                title={doc.status === "ready" ? "Refresh page" : "Retry ingestion"}
                               >
                                 <svg className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -710,14 +714,14 @@ export function KnowledgeTab({ botId }: KnowledgeTabProps) {
               )}
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              {detailDoc.source_type === "url" && detailDoc.status === "ready" && (
+              {detailDoc.source_type === "url" && detailDoc.status !== "processing" && (
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => handleRefresh(detailDoc)}
                   isLoading={refreshingId === detailDoc.id}
                 >
-                  Refresh
+                  {detailDoc.status === "ready" ? "Refresh" : "Retry"}
                 </Button>
               )}
               {detailDoc.source_type === "url" && detailDoc.source_url && (

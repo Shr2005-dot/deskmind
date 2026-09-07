@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,6 +71,60 @@ class UrlIngestRequest(BaseModel):
     url: str
 
 
+def _failure_reason(exc: Exception) -> str:
+    """Compact, user-safe reason for an ingestion failure.
+
+    The text is shown in the dashboard status badge (e.g.
+    ``failed: chunking (website returned an error (status 403))``), so it is
+    trimmed to a reasonable length. Messages from ``safe_get`` / ``scrape_url``
+    are already user-safe by design.
+    """
+    text = (str(exc) or exc.__class__.__name__).strip()
+    while text and text[-1] in ".!?":
+        text = text[:-1]
+    if len(text) > 80:
+        text = text[:77].rstrip() + "..."
+    return text
+
+
+def _persist_document_fields(document_id: str, **fields) -> bool:
+    """Persist fields on a document using a FRESH session, with retries.
+
+    Background ingestion can spend many minutes between its first DB access
+    (status updates right after scraping) and its last (marking the document
+    ready): embedding on the Voyage free tier paces requests at roughly one
+    batch every 30 seconds. During that window the session opened at task
+    start can hold an idle connection that the managed Postgres (Neon) has
+    dropped, and the Neon compute itself may have suspended. A fresh session
+    lets ``pool_pre_ping`` revalidate the pooled connection on checkout, and
+    the short retry loop covers a cold start.
+
+    Returns False when the document no longer exists (deleted while the
+    ingestion task was running).
+    """
+    retry_waits = (2.0, 5.0, 10.0, 15.0)
+    last_exc: Exception | None = None
+    for attempt in range(1, len(retry_waits) + 2):
+        session: Session = SessionLocal()
+        try:
+            doc = session.get(Document, document_id)
+            if doc is None:
+                return False
+            for key, value in fields.items():
+                setattr(doc, key, value)
+            session.commit()
+            return True
+        except Exception as exc:
+            session.rollback()
+            last_exc = exc
+            if attempt <= len(retry_waits):
+                time.sleep(retry_waits[attempt - 1])
+        finally:
+            session.close()
+    assert last_exc is not None  # loop only exits via return or raise
+    raise last_exc
+
+
 def _run_ingestion(
     document_id: str,
     file_path: str | None = None,
@@ -80,18 +135,22 @@ def _run_ingestion(
     Supports both PDF file uploads and URL ingestion. Updates the Document
     status to one of:
       - ready
-      - failed: chunking
-      - failed: no content
-      - failed: storage
+      - failed: chunking (<reason>)   — fetch/extract/chunk errors; for URL
+        sources the reason names the actual cause (HTTP status, timeout,
+        unsupported content type, no extractable content, ...)
+      - failed: no content            — text extracted but too little to chunk
+      - failed: storage               — persisting chunks/embeddings failed
       - failed (for any unexpected error; full traceback is logged)
     """
     session: Session = SessionLocal()
     document: Document | None = None
+    doc_uuid: uuid.UUID | None = None
     try:
         document = session.get(Document, document_id)
         if document is None:
             logger.error("Document %s not found during background ingestion", document_id)
             return
+        doc_uuid = document.id
 
         # Stage 1: chunking
         pages: list[tuple[int, str]] = []
@@ -126,10 +185,15 @@ def _run_ingestion(
                 document_id,
                 exc,
             )
-            document = session.get(Document, document_id)
-            if document is not None:
-                document.status = "failed: chunking"
-                session.commit()
+            reason = _failure_reason(exc)
+            try:
+                _persist_document_fields(
+                    document_id, status=f"failed: chunking ({reason})"
+                )
+            except Exception:
+                logger.exception(
+                    "Could not persist failure status for document %s", document_id
+                )
             return
 
         # Update website metadata if applicable
@@ -160,10 +224,12 @@ def _run_ingestion(
                 "No chunks produced for document %s; marking as failed (no content)",
                 document_id,
             )
-            document = session.get(Document, document_id)
-            if document is not None:
-                document.status = "failed: no content"
-                session.commit()
+            try:
+                _persist_document_fields(document_id, status="failed: no content")
+            except Exception:
+                logger.exception(
+                    "Could not persist failure status for document %s", document_id
+                )
             return
 
         # Stage 2: embedding
@@ -176,23 +242,48 @@ def _run_ingestion(
             )
             embeddings = _generate_fallback_embeddings(all_chunks)
 
-        # Stage 3: storage
+        # Stage 3: storage.
+        #
+        # Embedding a large URL page takes minutes on the Voyage free tier
+        # (requests are paced at ~3 RPM). During that window the database
+        # connection held by ``session`` may have gone stale and a suspended
+        # Neon compute may need a moment to wake up, so re-verify the document
+        # on a fresh, retried session instead of the long-lived one, and give
+        # ``store_chunks`` enough retry head-room to survive a cold start.
         try:
-            document = session.get(Document, document_id)
-            if document is None:
-                logger.info("Document %s was deleted before storage; aborting chunk persistence", document_id)
-                return
-            store_chunks(document.id, all_chunks, embeddings, all_metadata)
+            still_exists = _persist_document_fields(document_id)
         except Exception:
-            logger.exception("Storage failed for document %s", document_id)
-            document = session.get(Document, document_id)
-            if document is not None:
-                document.status = "failed: storage"
-                session.commit()
+            logger.exception(
+                "Could not re-verify document %s before storage; attempting storage anyway",
+                document_id,
+            )
+            still_exists = True  # let store_chunks surface any real storage error
+        if not still_exists:
+            logger.info(
+                "Document %s was deleted before storage; aborting chunk persistence",
+                document_id,
+            )
             return
 
-        document.status = "ready"
-        session.commit()
+        try:
+            store_chunks(doc_uuid, all_chunks, embeddings, all_metadata)
+        except Exception:
+            logger.exception("Storage failed for document %s", document_id)
+            try:
+                _persist_document_fields(document_id, status="failed: storage")
+            except Exception:
+                logger.exception(
+                    "Could not persist failure status for document %s", document_id
+                )
+            return
+
+        try:
+            _persist_document_fields(document_id, status="ready")
+        except Exception:
+            logger.exception(
+                "Could not mark document %s ready after successful storage", document_id
+            )
+            return
         logger.info(
             "Ingestion complete for document %s: %s chunks stored",
             document_id,
@@ -205,15 +296,12 @@ def _run_ingestion(
         logger.exception(
             "Unexpected error during ingestion for document %s", document_id
         )
-        if document is not None:
-            try:
-                document.status = "failed"
-                session.commit()
-            except Exception:
-                session.rollback()
-                logger.exception(
-                    "Could not persist failed status for document %s", document_id
-                )
+        try:
+            _persist_document_fields(document_id, status="failed")
+        except Exception:
+            logger.exception(
+                "Could not persist failed status for document %s", document_id
+            )
     finally:
         session.close()
 

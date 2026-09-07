@@ -517,10 +517,16 @@ def store_chunks(
                     f"Embedding for chunk {idx} dimension {dim_idx} is invalid: {val}"
                 )
 
-    # Retry transient DB errors (connection drops, brief lock timeouts) a few
-    # times before giving up, instead of failing the whole ingestion outright.
+    # Retry transient DB errors (connection drops, cold starts, brief lock
+    # timeouts) several times before giving up, instead of failing the whole
+    # ingestion outright. Large URL ingests can leave the managed database
+    # idle for many minutes while embeddings are generated (Voyage free-tier
+    # pacing); Neon may then suspend the compute and storage can hit a
+    # cold-starting database. The waits below (2+5+10+15 = 32s) plus each
+    # attempt's own connect time give a cold start time to finish.
+    retry_waits = (2.0, 5.0, 10.0, 15.0)
     last_exc: Exception | None = None
-    for attempt in range(1, 4):
+    for attempt in range(1, len(retry_waits) + 2):
         session: Session = SessionLocal()
         try:
             for content, embedding, meta in zip(safe_chunks, embeddings, metadata):
@@ -537,10 +543,13 @@ def store_chunks(
             session.rollback()
             last_exc = exc
             logger.exception(
-                "Storage attempt %s/3 failed for document %s", attempt, document_id
+                "Storage attempt %s/%s failed for document %s",
+                attempt,
+                len(retry_waits) + 1,
+                document_id,
             )
-            if attempt < 3:
-                time.sleep(2**attempt)
+            if attempt <= len(retry_waits):
+                time.sleep(retry_waits[attempt - 1])
                 continue
             raise
         finally:
