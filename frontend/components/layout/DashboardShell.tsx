@@ -63,7 +63,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 </button>
               )}
               <div className={sidebarOpen ? "ml-2" : ""}>
-                 <AppLogo className="h-6 w-auto md:h-8" />
+                 <AppLogo className="h-5 w-auto md:h-6" />
               </div>
             </div>
           </div>
