@@ -49,6 +49,14 @@
 }
 
 :root {
+  /* DeskMind is designed light-only. Declaring ``color-scheme: light only``
+     stops mobile browsers (e.g. Chrome on Android with a dark system theme)
+     from auto-darkening the page, which previously produced dark page
+     backgrounds under hardcoded light-mode components — text became
+     unreadable and the layout looked broken. The app's palette is fixed
+     light in all conditions. */
+  color-scheme: light only;
+
   --background: #f8fafc;
   --foreground: #0f172a;
   --surface: #ffffff;
@@ -68,16 +76,6 @@
   --color-success: var(--success);
   --color-error: var(--error);
   --color-warning: var(--warning);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --surface: #1e293b;
-    --border: #334155;
-    --muted: #94a3b8;
-  }
 }
 
 body {

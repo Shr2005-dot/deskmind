@@ -9,13 +9,16 @@ interface TabsProps {
 export function Tabs({ items, activeId, onChange }: TabsProps) {
   return (
     <div className="border-b border-border">
-      <nav className="flex gap-1" aria-label="Tabs">
+      {/* Horizontally scrollable on narrow screens: the bot page has eight
+          tabs, which cannot fit a phone viewport — without this the row
+          overflows the page and widens the whole document. */}
+      <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
         {items.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
             className={`
-              relative px-4 py-2.5 text-sm font-medium transition-colors duration-150 ease-out
+              relative shrink-0 whitespace-nowrap px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors duration-150 ease-out
               rounded-t-lg
               ${
                 activeId === tab.id
