@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -20,7 +20,7 @@ export function Button({
 
   const variants = {
     primary:
-      "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md",
+      "bg-primary-600 text-primary-contrast hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md",
     secondary:
       "bg-primary-50 text-primary-700 hover:bg-primary-100 focus:ring-primary-500",
     outline:
@@ -28,7 +28,7 @@ export function Button({
     ghost:
       "text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-200",
     danger:
-      "bg-error text-white hover:bg-red-600 focus:ring-error shadow-sm hover:shadow-md",
+      "bg-error text-primary-contrast hover:bg-red-600 focus:ring-error shadow-sm hover:shadow-md",
   };
 
   const sizes = {

@@ -17,8 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DeskMind",
   description: "AI-powered document chatbot platform",
-  // Keep mobile browsers from auto-darkening the (light-only) UI.
-  colorScheme: "light",
+  // Support both schemes so browsers do not force-darken; the CSS in
+  // globals.css follows prefers-color-scheme itself.
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({

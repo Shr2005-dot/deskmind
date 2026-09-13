@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
@@ -180,7 +180,7 @@ export function ChatTab({ botId, botName }: ChatTabProps) {
               className={`
                 max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm
                 ${msg.role === "user"
-                  ? "bg-primary-600 text-white rounded-br-md"
+                  ? "bg-primary-600 text-primary-contrast rounded-br-md"
                   : "bg-gray-100 text-gray-900 rounded-bl-md"
                 }
               `}
@@ -328,7 +328,7 @@ export function ChatTab({ botId, botName }: ChatTabProps) {
                     <button
                       type="submit"
                       disabled={leadSubmitting}
-                      className="rounded-md bg-yellow-600 px-3 py-1 text-xs font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
+                      className="rounded-md bg-yellow-600 px-3 py-1 text-xs font-medium text-primary-contrast hover:bg-yellow-700 disabled:opacity-50"
                     >
                       {leadSubmitting ? "Sending..." : "Send"}
                     </button>

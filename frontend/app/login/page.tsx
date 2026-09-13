@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -95,7 +95,7 @@ export default function LoginPage() {
                 onClick={() => setMode("google")}
                 className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   mode === "google"
-                    ? "bg-primary-600 text-white"
+                    ? "bg-primary-600 text-primary-contrast"
                     : "text-gray-700 hover:text-gray-900"
                 }`}
               >
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 onClick={() => setMode("guest")}
                 className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   mode === "guest"
-                    ? "bg-primary-600 text-white"
+                    ? "bg-primary-600 text-primary-contrast"
                     : "text-gray-700 hover:text-gray-900"
                 }`}
               >

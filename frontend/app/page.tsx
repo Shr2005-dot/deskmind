@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -240,10 +240,10 @@ export default function Home() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-24 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/" className="flex items-center">
-                <AppLogo className="h-10 w-auto" priority />
+          <div className="flex h-16 sm:h-24 items-center justify-between">
+            <div className="flex items-center gap-3 sm:gap-8">
+              <Link href="/" className="flex items-center shrink-0">
+                <AppLogo className="h-7 sm:h-10 w-auto" priority />
               </Link>
               <div className="hidden md:flex items-center gap-6 text-base">
                 {NAV_LINKS.map((item) => (
@@ -257,16 +257,16 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <Link
                 href="/login"
-                className="text-base font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 transition-colors"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="text-base font-medium rounded-lg bg-primary-600 px-5 py-2.5 text-white hover:bg-primary-700 transition-colors"
+                className="text-sm sm:text-base font-medium rounded-lg bg-primary-600 px-3.5 py-2 sm:px-5 sm:py-2.5 text-primary-contrast hover:bg-primary-700 transition-colors"
               >
                 Get Started
               </Link>
@@ -285,12 +285,12 @@ export default function Home() {
                 Turn your business knowledge into an AI support agent.
               </h1>
               <p className="mt-5 text-lg text-gray-600 leading-relaxed max-w-xl">
-                DeskMind lets you upload PDFs and websites, then creates an intelligent chatbot that answers customer questions using your own content — accurate, grounded, and trustworthy.
+                DeskMind lets you upload PDFs and websites, then creates an intelligent chatbot that answers customer questions using your own content â€” accurate, grounded, and trustworthy.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
+                  className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-primary-contrast hover:bg-primary-700 transition-colors"
                 >
                   Get Started
                 </Link>
@@ -320,13 +320,13 @@ export default function Home() {
                     </div>
                     <div className="flex-1 rounded-xl rounded-tl-none border border-border bg-gray-50 px-3 py-2">
                       <p className="text-xs font-medium text-gray-900">How do I return an item?</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Order #1234 · 2 min ago</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">Order #1234 Â· 2 min ago</p>
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end">
                     <div className="max-w-[80%] rounded-xl rounded-tr-none bg-primary-600 px-3 py-2">
-                      <p className="text-xs font-medium text-white">You can return items within 30 days of purchase if they’re unused and in original packaging.</p>
-                      <p className="text-[11px] text-primary-200 mt-1">Source: Refund Policy · Page 2</p>
+                      <p className="text-xs font-medium text-primary-contrast">You can return items within 30 days of purchase if theyâ€™re unused and in original packaging.</p>
+                      <p className="text-[11px] text-primary-200 mt-1">Source: Refund Policy Â· Page 2</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -353,7 +353,7 @@ export default function Home() {
           <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">What is DeskMind?</p>
           <h2 className="mt-3 text-3xl font-bold text-gray-900">Your knowledge, conversational.</h2>
           <p className="mt-4 text-base text-gray-600 leading-relaxed">
-            DeskMind is an AI-powered customer support chatbot builder. You connect your own knowledge — PDFs, websites, docs — and DeskMind creates an assistant that answers questions using that content. No generic chatbot. No guessing. Just grounded answers with sources.
+            DeskMind is an AI-powered customer support chatbot builder. You connect your own knowledge â€” PDFs, websites, docs â€” and DeskMind creates an assistant that answers questions using that content. No generic chatbot. No guessing. Just grounded answers with sources.
           </p>
         </div>
       </section>
@@ -426,11 +426,11 @@ export default function Home() {
               <div className="rounded-xl border border-border bg-gray-50/70 p-4">
                 <p className="text-sm font-medium text-gray-900 mb-2">Answer</p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Based on your documentation, your refund window is 14 days from purchase. If the item is unused and in original packaging, we’ll process a refund to the original payment method within 5–7 business days.
+                  Based on your documentation, your refund window is 14 days from purchase. If the item is unused and in original packaging, weâ€™ll process a refund to the original payment method within 5â€“7 business days.
                 </p>
                 <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-white p-3">
                   <p className="text-xs font-medium text-gray-500">Sources</p>
-                  <p className="text-xs text-gray-600 mt-1">Refund Policy — Page 3</p>
+                  <p className="text-xs text-gray-600 mt-1">Refund Policy â€” Page 3</p>
                 </div>
               </div>
             </div>
@@ -445,7 +445,7 @@ export default function Home() {
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
               { title: "PDFs", description: "Upload manuals, policies, and reports." },
-              { title: "Websites", description: "Add URLs and we’ll ingest pages automatically." },
+              { title: "Websites", description: "Add URLs and weâ€™ll ingest pages automatically." },
               { title: "Text & Markdown", description: "Structured content becomes searchable answers." },
             ].map((item) => (
               <div key={item.title} className="rounded-xl border border-border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -472,15 +472,15 @@ export default function Home() {
               <div className="space-y-3">
                 <div className="rounded-lg border border-border bg-gray-50/70 p-3">
                   <p className="text-xs text-gray-500">Visitor asks</p>
-                  <p className="text-sm text-gray-800">“Are there any discounts available?”</p>
+                  <p className="text-sm text-gray-800">â€œAre there any discounts available?â€</p>
                 </div>
                 <div className="rounded-lg border border-border bg-primary-50/70 p-3">
                   <p className="text-xs text-primary-700">Bot answers</p>
-                  <p className="text-sm text-gray-800">“Yes — enter your email and we’ll send the latest offers.”</p>
+                  <p className="text-sm text-gray-800">â€œYes â€” enter your email and weâ€™ll send the latest offers.â€</p>
                 </div>
                 <div className="rounded-lg border border-border bg-gray-50/70 p-3">
                   <p className="text-xs text-gray-500">Captured lead</p>
-                  <p className="text-sm text-gray-800">alex@example.com — “Are there any discounts available?”</p>
+                  <p className="text-sm text-gray-800">alex@example.com â€” â€œAre there any discounts available?â€</p>
                 </div>
               </div>
             </div>
@@ -507,7 +507,7 @@ export default function Home() {
               </div>
               <div className="rounded-xl border border-border bg-gray-50/70 p-4">
                 <p className="text-xs text-gray-500">Top question</p>
-                <p className="mt-1 text-sm font-medium text-gray-900">“What are your pricing plans?”</p>
+                <p className="mt-1 text-sm font-medium text-gray-900">â€œWhat are your pricing plans?â€</p>
               </div>
             </div>
           </div>
@@ -539,7 +539,7 @@ export default function Home() {
                     <p className="text-sm font-semibold text-gray-900">Widget Preview</p>
                     <p className="text-xs text-gray-500">Floating chat button</p>
                   </div>
-                  <span className="h-8 w-8 rounded-full bg-primary-600 text-white text-xs font-medium flex items-center justify-center">Chat</span>
+                  <span className="h-8 w-8 rounded-full bg-primary-600 text-primary-contrast text-xs font-medium flex items-center justify-center">Chat</span>
                 </div>
                 <div className="p-4 space-y-3">
                   <div className="flex gap-2">
@@ -554,7 +554,7 @@ export default function Home() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <div className="max-w-[85%] rounded-xl rounded-tr-none bg-primary-600 px-3 py-2">
-                      <p className="text-xs font-medium text-white">Yes — we offer a 14-day free trial with full access.</p>
+                      <p className="text-xs font-medium text-primary-contrast">Yes â€” we offer a 14-day free trial with full access.</p>
                       <p className="text-[11px] text-primary-200 mt-1">Source: Pricing Page</p>
                     </div>
                   </div>
@@ -616,12 +616,12 @@ export default function Home() {
           <SectionHeading
             eyebrow="Account Options"
             title="Two ways to create your account."
-            subtitle="Sign up with Google for unlimited bots, or start instantly as a guest — no Google account required."
+            subtitle="Sign up with Google for unlimited bots, or start instantly as a guest â€” no Google account required."
           />
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             {/* Google account */}
             <div className="relative rounded-xl border border-primary-100 bg-white p-8 shadow-sm">
-              <span className="absolute -top-3 right-6 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-white">
+              <span className="absolute -top-3 right-6 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-primary-contrast">
                 Recommended
               </span>
               <div className="flex items-center gap-4">
@@ -652,7 +652,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link href="/signup" className="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+              <Link href="/signup" className="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-primary-contrast hover:bg-primary-700 transition-colors">
                 Sign up with Google
               </Link>
             </div>
@@ -690,7 +690,7 @@ export default function Home() {
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-gray-500">
-            Start as a guest and continue with Google later — your bots stay with you.
+            Start as a guest and continue with Google later â€” your bots stay with you.
           </p>
         </div>
       </section>
@@ -701,7 +701,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-gray-900">Your knowledge already exists. Now make it conversational.</h2>
           <p className="mt-4 text-base text-gray-600">Create your first bot, add your knowledge, and start answering customer questions automatically.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-medium text-primary-contrast hover:bg-primary-700 transition-colors">
               Get Started
             </Link>
             <Link href="/login" className="inline-flex items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
@@ -741,7 +741,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-10 border-t border-border pt-6 text-xs text-gray-500">
-            © {new Date().getFullYear()} DeskMind. All rights reserved.
+            Â© {new Date().getFullYear()} DeskMind. All rights reserved.
           </div>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
@@ -105,7 +105,7 @@ function StatusBadge({ status }: { status: string }) {
     processing: "Processing",
   };
   // Detailed failure statuses look like "failed: chunking (website returned
-  // an error (status 403))" — show them in red even though they are not the
+  // an error (status 403))" â€” show them in red even though they are not the
   // bare "failed" key.
   const isFailed = status.startsWith("failed");
   return (
@@ -382,7 +382,7 @@ export function KnowledgeTab({ botId }: KnowledgeTabProps) {
                   onClick={() => setFilter("all")}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                     filter === "all"
-                      ? "bg-primary-600 text-white"
+                      ? "bg-primary-600 text-primary-contrast"
                       : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
@@ -393,7 +393,7 @@ export function KnowledgeTab({ botId }: KnowledgeTabProps) {
                   onClick={() => setFilter("files")}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border ${
                     filter === "files"
-                      ? "bg-primary-600 text-white"
+                      ? "bg-primary-600 text-primary-contrast"
                       : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
@@ -404,7 +404,7 @@ export function KnowledgeTab({ botId }: KnowledgeTabProps) {
                   onClick={() => setFilter("websites")}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border ${
                     filter === "websites"
-                      ? "bg-primary-600 text-white"
+                      ? "bg-primary-600 text-primary-contrast"
                       : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >

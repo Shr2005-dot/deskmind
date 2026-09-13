@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -67,7 +67,7 @@ export function EmbedTab({ botId, botName, avatar }: EmbedTabProps) {
         </div>
 
         <div className="relative">
-          <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100 font-mono leading-relaxed">
+          <pre className="overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-200 font-mono leading-relaxed">
             {embedCode}
           </pre>
         </div>
@@ -102,7 +102,7 @@ export function EmbedTab({ botId, botName, avatar }: EmbedTabProps) {
                 {avatar ? (
                   <Image src={avatar} alt={botName} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-primary-contrast text-xs font-bold">
                     {botName.charAt(0).toUpperCase()}
                   </div>
                 )}
