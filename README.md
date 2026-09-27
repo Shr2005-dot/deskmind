@@ -18,7 +18,7 @@ DeskMind is an AI-powered knowledge management platform that lets you upload doc
 |-----------|-----------|--------|
 | Backend | Python + FastAPI | Active |
 | Database | PostgreSQL + pgvector | Active |
-| LLM | Groq (configurable via `GROQ_MODEL`; default: `groq/compound-mini`) | Active |
+| LLM | Groq (configurable via `GROQ_MODEL`; default: `openai/gpt-oss-120b`, with automatic fallback to `openai/gpt-oss-20b` / `qwen/qwen3.8-27b`) | Active |
 | Embeddings | Voyage AI (`voyage-2`) | Active |
 | Frontend | Next.js (React + TypeScript + Tailwind) | Active |
 | Widget | Vanilla TypeScript IIFE (Vite build) | Active |
@@ -330,6 +330,42 @@ python -m pytest tests/test_rag.py tests/test_rag_evaluation.py -v
 # Full test suite (requires database)
 python -m pytest tests/ -v
 ```
+
+### Deployment
+
+**Backend (FastAPI Cloud).**
+
+This directory is linked to a FastAPI Cloud app through `backend/.fastapicloud/cloud.json`, so deployment is a single command:
+
+```bash
+cd backend
+fastapi cloud login          # one-off, opens the browser for device authorization
+fastapi cloud deploy         # build + upload + release, waits for the deployment
+```
+
+Useful variants:
+
+```bash
+fastapi cloud deploy --no-wait                       # do not wait for the rollout
+fastapi cloud deploy --app-id <app-id>               # deploy to a specific app
+fastapi cloud env                                    # manage environment variables
+fastapi cloud logs                                   # stream production logs
+```
+
+`fastapi cloud login` requires browser authorization, so it cannot run in a non-interactive shell; automated deploys need a deploy token (`fastapi cloud tokens create`) passed as `FASTAPI_CLOUD_APP_ID` / CI credentials — `fastapi cloud setup-ci` generates the GitHub Actions workflow.
+
+**Frontend (Next.js).**
+
+```bash
+cd frontend
+npm run build          # production build (also serves as the TypeScript check)
+```
+
+**Widget.**
+
+`npm run build` in `widget/` regenerates `widget/dist/widget.iife.js` (IIFE build) plus an ES module build at `widget/dist/widget.js`.
+
+> **Chat endpoint contract:** `POST /bots/{bot_id}/chat` always answers `200 OK` with a JSON body, even when Groq or Voyage AI is rate-limited or unavailable — the answer then explains that the service is temporarily unavailable. The deployed backend sits behind Cloudflare, which replaces 5xx bodies with its own HTML error page (no CORS headers), so a 5xx would reach the browser as an opaque `Network Error`. Provider failures are logged as `Retrieval failed for bot ...` / `Generation failed for bot ...` instead.
 
 ## Configuration
 

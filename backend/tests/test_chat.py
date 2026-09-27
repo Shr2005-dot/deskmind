@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -205,7 +206,7 @@ class TestChat:
 
     @patch("app.routes.chat.generate_answer")
     @patch("app.routes.chat.retrieve")
-    def test_chat_external_api_failure(
+    def test_chat_retrieval_failure_degrades_gracefully(
         self,
         mock_retrieve,
         mock_generate,
@@ -214,6 +215,12 @@ class TestChat:
         test_bot: Bot,
         db,
     ):
+        """A retrieval outage must not surface as a 5xx.
+
+        Cloudflare replaces a 5xx response body with its own HTML error page,
+        which carries no CORS headers, so the browser can only report "Network
+        Error". The endpoint therefore answers 200 with a retryable message.
+        """
         from app.utils.security import create_access_token
 
         token = create_access_token(data={"sub": str(test_user.id)})
@@ -224,8 +231,125 @@ class TestChat:
             json={"message": "Tell me about your policies"},
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response.status_code == status.HTTP_502_BAD_GATEWAY
-        assert "temporarily unable" in response.json()["detail"]
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "temporarily unavailable" in data["answer"]
+        assert data["sources"] == []
+        assert data["prompt_for_email"] is False
+        mock_generate.assert_not_called()
+
+        # The reply is persisted, so the conversation stays coherent and the
+        # user can simply ask again.
+        messages = (
+            db.query(Message)
+            .filter(Message.conversation_id == uuid.UUID(data["conversation_id"]))
+            .order_by(Message.created_at)
+            .all()
+        )
+        assert [m.role for m in messages] == ["user", "assistant"]
+
+    @patch("app.routes.chat.generate_answer")
+    @patch("app.routes.chat.retrieve")
+    def test_chat_generation_failure_degrades_gracefully(
+        self,
+        mock_retrieve,
+        mock_generate,
+        client,
+        test_user: User,
+        test_bot: Bot,
+        db,
+    ):
+        """A Groq outage (e.g. a retired GROQ_MODEL) must not surface as a 5xx."""
+        from app.utils.security import create_access_token
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+
+        mock_context = MagicMock()
+        mock_context.observations.refusal = False
+        mock_context.observations.degraded = False
+        mock_chunk = MagicMock()
+        mock_chunk.content = "We offer a 30 day return window."
+        mock_chunk.metadata_ = {}
+        mock_doc = MagicMock()
+        mock_doc.filename = "policies.pdf"
+        mock_context.chunks = [(mock_chunk, mock_doc, 0.93)]
+        mock_retrieve.return_value = mock_context
+        mock_generate.side_effect = Exception(
+            "Error code: 404 - model_not_found: groq/compound-mini does not exist"
+        )
+
+        response = client.post(
+            f"/bots/{test_bot.id}/chat",
+            json={"message": "What is the return window?"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "couldn't compose an answer" in data["answer"]
+        assert "temporarily unavailable" in data["answer"]
+        # Unverified sources must not be shown next to a failure message.
+        assert data["sources"] == []
+        assert data["prompt_for_email"] is False
+
+    @patch("app.routes.chat.generate_answer")
+    @patch("app.routes.chat.retrieve")
+    def test_chat_never_returns_5xx_when_providers_fail(
+        self,
+        mock_retrieve,
+        mock_generate,
+        client,
+        test_user: User,
+        test_bot: Bot,
+        db,
+    ):
+        """Both providers failing still yields a readable answer, never a 5xx."""
+        from app.utils.security import create_access_token
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+        mock_retrieve.side_effect = Exception("Voyage is down")
+        mock_generate.side_effect = Exception("Groq is down")
+
+        response = client.post(
+            f"/bots/{test_bot.id}/chat",
+            json={"message": "What are your support hours?"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["answer"]
+
+    @patch("app.routes.chat.generate_answer")
+    @patch("app.routes.chat.retrieve")
+    def test_chat_degraded_retrieval_reports_rate_limit(
+        self,
+        mock_retrieve,
+        mock_generate,
+        client,
+        test_user: User,
+        test_bot: Bot,
+        db,
+    ):
+        """Degraded retrieval says so, instead of claiming it does not know."""
+        from app.utils.security import create_access_token
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+
+        mock_context = MagicMock()
+        mock_context.observations.refusal = True
+        mock_context.observations.degraded = True
+        mock_context.observations.degraded_reason = "Voyage rate limited"
+        mock_context.chunks = []
+        mock_retrieve.return_value = mock_context
+
+        response = client.post(
+            f"/bots/{test_bot.id}/chat",
+            json={"message": "What is your refund policy?"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "rate-limited" in data["answer"]
+        assert data["sources"] == []
+        mock_generate.assert_not_called()
 
     def test_chat_bot_not_found(self, client, test_user: User):
         from app.utils.security import create_access_token

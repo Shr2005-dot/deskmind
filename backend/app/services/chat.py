@@ -13,7 +13,36 @@ from app.models import Chunk
 
 logger = logging.getLogger(__name__)
 
-GROQ_MODEL = os.getenv("GROQ_MODEL", "groq/compound-mini")
+# ---------------------------------------------------------------------------
+# Groq model selection
+# ---------------------------------------------------------------------------
+# Groq retires models without warning, and a name that no longer exists fails
+# every call with a 404 ``model_not_found``. That used to take chat down
+# completely: generation raised, the route answered 502, and Cloudflare
+# replaced that 502 with its own HTML error page (which carries no CORS
+# headers), so the browser only ever reported "Network Error".
+#
+# Two defences keep chat working across model churn:
+#
+# * the default below is a model this account can actually use, and
+# * :func:`resolve_groq_model` checks the configured model against Groq's
+#   model list and falls back to known-good models, caching the winner for the
+#   rest of the process so the check costs nothing on the happy path.
+#
+# Override the preferred model with the ``GROQ_MODEL`` env var.
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_MODEL = os.getenv("GROQ_MODEL") or DEFAULT_GROQ_MODEL
+
+# Tried in order when ``GROQ_MODEL`` is unavailable. All three are general
+# chat models that free-tier keys can use.
+_GROQ_MODEL_FALLBACKS: tuple[str, ...] = (
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+)
+
+# The model that last worked, so re-resolution happens at most once per process.
+_resolved_groq_model: str | None = None
 
 # ---------------------------------------------------------------------------
 # System prompt — must be resistant to prompt injection via retrieved docs.
@@ -333,6 +362,12 @@ def build_prompt(question: str, retrieved_chunks: List[tuple[Chunk, Document, fl
 _GENERATION_MAX_ATTEMPTS = 3
 _GENERATION_DEFAULT_WAIT_SECONDS = 6.0
 
+# Groq reserves prompt tokens PLUS ``max_tokens`` against the per-minute budget
+# when it rate-limits a request, so an uncapped completion can blow an 8k TPM
+# free-tier limit on its own. Support answers are short, so cap the completion
+# well above any realistic answer length while keeping the reservation small.
+_GENERATION_MAX_TOKENS = 1024
+
 
 def _rate_limit_wait_seconds(exc: Exception) -> float | None:
     """Return the suggested wait for a Groq rate-limit error, else None."""
@@ -344,23 +379,105 @@ def _rate_limit_wait_seconds(exc: Exception) -> float | None:
     return _GENERATION_DEFAULT_WAIT_SECONDS
 
 
+def _is_model_unavailable(exc: Exception) -> bool:
+    """Return True when Groq rejected the request because the model is gone."""
+    if exc.__class__.__name__ == "NotFoundError":
+        return True
+    text = str(exc).lower()
+    if "model_not_found" in text or "does not exist" in text:
+        return True
+    if "decommissioned" in text or "deprecated" in text:
+        return True
+    # Groq also answers 400 ``invalid_request_error`` for models that were
+    # withdrawn from an account's plan.
+    return "model" in text and ("not supported" in text or "not found" in text)
+
+
+def resolve_groq_model(client: Groq | None = None) -> str:
+    """Return a Groq model id that the configured API key can actually use.
+
+    ``GROQ_MODEL`` is preferred. When Groq reports it as unavailable (retired,
+    or withdrawn from this account) the known-good fallbacks are tried in order
+    and the first working model is cached for the rest of the process. Callers
+    that hit a ``model_not_found`` anyway should call
+    :func:`forget_resolved_groq_model` and try again.
+    """
+    global _resolved_groq_model
+
+    if _resolved_groq_model is not None:
+        return _resolved_groq_model
+
+    preferred = GROQ_MODEL
+    candidates = [preferred] + [m for m in _GROQ_MODEL_FALLBACKS if m != preferred]
+
+    try:
+        available = {model.id for model in (client or Groq()).models.list().data}
+    except Exception:
+        # Listing needs no extra permission normally, but never let a listing
+        # failure break chat: try the configured model and let the caller deal
+        # with a model error. Deliberately not cached so a later call retries.
+        logger.warning(
+            "Could not list Groq models; using configured model %r", preferred,
+            exc_info=True,
+        )
+        return preferred
+
+    for candidate in candidates:
+        if candidate in available:
+            if candidate != preferred:
+                logger.warning(
+                    "Groq model %r is unavailable; falling back to %r",
+                    preferred,
+                    candidate,
+                )
+            _resolved_groq_model = candidate
+            return candidate
+
+    logger.error(
+        "None of the configured Groq models are available for this key: %s",
+        candidates,
+    )
+    _resolved_groq_model = preferred
+    return preferred
+
+
+def forget_resolved_groq_model() -> None:
+    """Drop the cached model so the next call re-resolves it."""
+    global _resolved_groq_model
+    _resolved_groq_model = None
+
+
 def generate_answer(prompt: str) -> str:
     """Call Groq to generate an answer from the prompt.
 
     Retries rate-limit (429) responses a couple of times with the server
-    suggested wait so a burst of questions does not fail outright.
+    suggested wait, and re-resolves the model when Groq reports the configured
+    model as unavailable, so a retired model never fails the whole request.
     """
     client = Groq()  # reads GROQ_API_KEY from env
     last_exc: Exception | None = None
     for attempt in range(1, _GENERATION_MAX_ATTEMPTS + 1):
+        model = resolve_groq_model(client)
         try:
             response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
+                max_tokens=_GENERATION_MAX_TOKENS,
             )
             return response.choices[0].message.content or ""
         except Exception as exc:
             last_exc = exc
+            if _is_model_unavailable(exc):
+                # The cached model was retired mid-flight, or GROQ_MODEL points
+                # at a name that no longer exists: re-resolve and try again.
+                logger.warning(
+                    "Groq reported model %r as unavailable (attempt %s/%s)",
+                    model,
+                    attempt,
+                    _GENERATION_MAX_ATTEMPTS,
+                )
+                forget_resolved_groq_model()
+                continue
             wait = _rate_limit_wait_seconds(exc)
             if wait is not None and attempt < _GENERATION_MAX_ATTEMPTS:
                 logger.warning(

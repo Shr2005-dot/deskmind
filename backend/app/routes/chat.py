@@ -33,6 +33,25 @@ router = APIRouter(prefix="/bots/{bot_id}/chat", tags=["chat"])
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Degraded answers
+# ---------------------------------------------------------------------------
+# This endpoint must never answer with a 5xx. Cloudflare fronts the deployed
+# backend and replaces any 5xx response body with its own HTML error page,
+# which carries no CORS headers — the browser then only reports an opaque
+# "Network Error" and the user never learns what went wrong. When a downstream
+# provider (Voyage AI for query embeddings, Groq for generation) is
+# rate-limited or unavailable, reply normally and tell the user to retry.
+_RETRIEVAL_UNAVAILABLE_ANSWER = (
+    "I couldn't search my knowledge base just now because the retrieval "
+    "service is temporarily unavailable. Please try again in a minute."
+)
+_GENERATION_UNAVAILABLE_ANSWER = (
+    "I found matching information in the knowledge base, but I couldn't "
+    "compose an answer just now because the AI service is temporarily "
+    "unavailable. Please try again in a moment."
+)
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -75,7 +94,11 @@ def chat(
     bot_id: str,
     request: ChatRequest,
     db: DbSession,
-    x_debug_retrieval: Optional[str] = Header(default=None, convert_underscores=False),
+    # The dashboard sends the hyphenated ``x-debug-retrieval`` header (see
+    # frontend/lib/api.ts and README). FastAPI would otherwise look for a
+    # literal ``x_debug_retrieval`` header, so an explicit alias is required for
+    # the debug payload to be returned at all.
+    x_debug_retrieval: Optional[str] = Header(default=None, alias="x-debug-retrieval"),
 ):
     bot = get_bot_or_404(bot_id, db)
 
@@ -149,58 +172,65 @@ def chat(
                 request.message,
                 conversation_messages=conversation_message_dicts,
             )
-        except Exception as exc:
+        except Exception:
             logger.exception("Retrieval failed for bot %s", bot_id)
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="DeskMind is temporarily unable to retrieve information. Please try again.",
-            ) from exc
+            context = None
 
-        observations: RetrievalObservations = context.observations
+        observations: RetrievalObservations | None = None
 
-        # Decide whether to call the LLM.
-        if observations.refusal or not context.chunks:
-            if observations.degraded:
-                # Retrieval could not run properly (e.g. the embedding provider is
-                # rate-limited). Say so honestly instead of claiming the knowledge
-                # base lacks the answer — the user should retry, not give up.
-                answer_text = (
-                    "I couldn't search my knowledge base just now because the "
-                    "retrieval service is temporarily rate-limited. "
-                    "Please try again in a minute."
-                )
-            else:
-                answer_text = "I don't know based on the available knowledge."
+        if context is None:
+            # Degrade instead of failing the request (see the degraded-answer
+            # comments above).
+            answer_text = _RETRIEVAL_UNAVAILABLE_ANSWER
             sources = []
             prompt_for_email = False
         else:
-            prompt = build_prompt(request.message, context.chunks)
-            try:
-                answer_text = generate_answer(prompt)
-            except Exception as exc:
-                logger.exception("Generation failed for bot %s", bot_id)
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="DeskMind is temporarily unable to generate a response. Please try again.",
-                ) from exc
+            observations = context.observations
 
-            # If the model hedges or refuses, treat it as an unsupported answer.
-            if _looks_like_refusal(answer_text):
+            # Decide whether to call the LLM.
+            if observations.refusal or not context.chunks:
+                if observations.degraded:
+                    # Retrieval could not run properly (e.g. the embedding
+                    # provider is rate-limited). Say so honestly instead of
+                    # claiming the knowledge base lacks the answer — the user
+                    # should retry, not give up.
+                    answer_text = (
+                        "I couldn't search my knowledge base just now because the "
+                        "retrieval service is temporarily rate-limited. "
+                        "Please try again in a minute."
+                    )
+                else:
+                    answer_text = "I don't know based on the available knowledge."
                 sources = []
                 prompt_for_email = False
             else:
-                sources = [
-                    SourceChunk(
-                        document_filename=doc.filename,
-                        chunk_content=chunk.content,
-                        similarity_score=round(score, 4),
-                    )
-                    for chunk, doc, score in context.chunks
-                ]
-                prompt_for_email = should_prompt_for_email(
-                    question=request.message,
-                    has_relevant_chunks=len(sources) > 0,
-                )
+                prompt = build_prompt(request.message, context.chunks)
+                try:
+                    answer_text = generate_answer(prompt)
+                except Exception:
+                    logger.exception("Generation failed for bot %s", bot_id)
+                    answer_text = _GENERATION_UNAVAILABLE_ANSWER
+                    sources = []
+                    prompt_for_email = False
+                else:
+                    # If the model hedges or refuses, treat it as an unsupported
+                    # answer.
+                    if _looks_like_refusal(answer_text):
+                        sources = []
+                        prompt_for_email = False
+                    else:
+                        sources = [
+                            SourceChunk(
+                                document_filename=doc.filename,
+                                chunk_content=chunk.content,
+                                similarity_score=round(score, 4),
+                            )
+                            for chunk, doc, score in context.chunks
+                        ]
+                        prompt_for_email = should_prompt_for_email(
+                            question=request.message,
+                            has_relevant_chunks=len(sources) > 0,
+                        )
 
     # Save assistant message
     assistant_message = Message(
@@ -214,7 +244,7 @@ def chat(
 
     # Build optional debug payload for authenticated dashboard callers.
     debug_info = None
-    if x_debug_retrieval is not None:
+    if x_debug_retrieval is not None and observations is not None:
         debug_info = RetrievalDebugInfo(
             query=observations.retrieval_query,
             query_rewritten=observations.query_rewritten,

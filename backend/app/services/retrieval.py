@@ -168,8 +168,13 @@ def _rewrite_query_with_llm(
         )
 
         client = Groq(api_key=api_key)
+        # Imported lazily so this module stays importable without the chat
+        # service, and so the model-resolution cache is shared with generation
+        # (a retired model must not silently disable query rewriting).
+        from app.services.chat import resolve_groq_model
+
         response = client.chat.completions.create(
-            model=os.getenv("GROQ_MODEL", "groq/compound-mini"),
+            model=resolve_groq_model(client),
             messages=[{"role": "user", "content": prompt}],
             max_tokens=128,
             temperature=0.0,
