@@ -72,9 +72,9 @@ const FEATURES = [
     ),
   },
   {
-    title: "I Don't Know Refusal",
+    title: "I Don’t Know Refusal",
     description:
-      "When the answer isn't in your knowledge base, the bot honestly says so instead of guessing.",
+      "When the answer isn’t in your knowledge base, the bot honestly says so instead of guessing.",
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -285,7 +285,7 @@ export default function Home() {
                 Turn your business knowledge into an AI support agent.
               </h1>
               <p className="mt-5 text-lg text-gray-600 leading-relaxed max-w-xl">
-                DeskMind lets you upload PDFs and websites, then creates an intelligent chatbot that answers customer questions using your own content â€” accurate, grounded, and trustworthy.
+                DeskMind lets you upload PDFs and websites, then creates an intelligent chatbot that answers customer questions using your own content — accurate, grounded, and trustworthy.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
@@ -320,13 +320,13 @@ export default function Home() {
                     </div>
                     <div className="flex-1 rounded-xl rounded-tl-none border border-border bg-gray-50 px-3 py-2">
                       <p className="text-xs font-medium text-gray-900">How do I return an item?</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Order #1234 Â· 2 min ago</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">Order #1234 · 2 min ago</p>
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end">
                     <div className="max-w-[80%] rounded-xl rounded-tr-none bg-primary-600 px-3 py-2">
-                      <p className="text-xs font-medium text-primary-contrast">You can return items within 30 days of purchase if theyâ€™re unused and in original packaging.</p>
-                      <p className="text-[11px] text-primary-200 mt-1">Source: Refund Policy Â· Page 2</p>
+                      <p className="text-xs font-medium text-primary-contrast">You can return items within 30 days of purchase if they’re unused and in original packaging.</p>
+                      <p className="text-[11px] text-primary-200 mt-1">Source: Refund Policy · Page 2</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -353,7 +353,7 @@ export default function Home() {
           <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">What is DeskMind?</p>
           <h2 className="mt-3 text-3xl font-bold text-gray-900">Your knowledge, conversational.</h2>
           <p className="mt-4 text-base text-gray-600 leading-relaxed">
-            DeskMind is an AI-powered customer support chatbot builder. You connect your own knowledge â€” PDFs, websites, docs â€” and DeskMind creates an assistant that answers questions using that content. No generic chatbot. No guessing. Just grounded answers with sources.
+            DeskMind is an AI-powered customer support chatbot builder. You connect your own knowledge — PDFs, websites, docs — and DeskMind creates an assistant that answers questions using that content. No generic chatbot. No guessing. Just grounded answers with sources.
           </p>
         </div>
       </section>
@@ -426,11 +426,11 @@ export default function Home() {
               <div className="rounded-xl border border-border bg-gray-50/70 p-4">
                 <p className="text-sm font-medium text-gray-900 mb-2">Answer</p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Based on your documentation, your refund window is 14 days from purchase. If the item is unused and in original packaging, weâ€™ll process a refund to the original payment method within 5â€“7 business days.
+                  Based on your documentation, your refund window is 14 days from purchase. If the item is unused and in original packaging, we’ll process a refund to the original payment method within 5–7 business days.
                 </p>
                 <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-white p-3">
                   <p className="text-xs font-medium text-gray-500">Sources</p>
-                  <p className="text-xs text-gray-600 mt-1">Refund Policy â€” Page 3</p>
+                  <p className="text-xs text-gray-600 mt-1">Refund Policy — Page 3</p>
                 </div>
               </div>
             </div>
@@ -445,7 +445,7 @@ export default function Home() {
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
               { title: "PDFs", description: "Upload manuals, policies, and reports." },
-              { title: "Websites", description: "Add URLs and weâ€™ll ingest pages automatically." },
+              { title: "Websites", description: "Add URLs and we’ll ingest pages automatically." },
               { title: "Text & Markdown", description: "Structured content becomes searchable answers." },
             ].map((item) => (
               <div key={item.title} className="rounded-xl border border-border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -472,15 +472,15 @@ export default function Home() {
               <div className="space-y-3">
                 <div className="rounded-lg border border-border bg-gray-50/70 p-3">
                   <p className="text-xs text-gray-500">Visitor asks</p>
-                  <p className="text-sm text-gray-800">â€œAre there any discounts available?â€</p>
+                  <p className="text-sm text-gray-800">“Are there any discounts available?”</p>
                 </div>
                 <div className="rounded-lg border border-border bg-primary-50/70 p-3">
                   <p className="text-xs text-primary-700">Bot answers</p>
-                  <p className="text-sm text-gray-800">â€œYes â€” enter your email and weâ€™ll send the latest offers.â€</p>
+                  <p className="text-sm text-gray-800">“Yes — enter your email and we’ll send the latest offers.”</p>
                 </div>
                 <div className="rounded-lg border border-border bg-gray-50/70 p-3">
                   <p className="text-xs text-gray-500">Captured lead</p>
-                  <p className="text-sm text-gray-800">alex@example.com â€” â€œAre there any discounts available?â€</p>
+                  <p className="text-sm text-gray-800">alex@example.com — “Are there any discounts available?”</p>
                 </div>
               </div>
             </div>
@@ -507,7 +507,7 @@ export default function Home() {
               </div>
               <div className="rounded-xl border border-border bg-gray-50/70 p-4">
                 <p className="text-xs text-gray-500">Top question</p>
-                <p className="mt-1 text-sm font-medium text-gray-900">â€œWhat are your pricing plans?â€</p>
+                <p className="mt-1 text-sm font-medium text-gray-900">“What are your pricing plans?”</p>
               </div>
             </div>
           </div>
@@ -554,7 +554,7 @@ export default function Home() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <div className="max-w-[85%] rounded-xl rounded-tr-none bg-primary-600 px-3 py-2">
-                      <p className="text-xs font-medium text-primary-contrast">Yes â€” we offer a 14-day free trial with full access.</p>
+                      <p className="text-xs font-medium text-primary-contrast">Yes — we offer a 14-day free trial with full access.</p>
                       <p className="text-[11px] text-primary-200 mt-1">Source: Pricing Page</p>
                     </div>
                   </div>
@@ -596,7 +596,7 @@ export default function Home() {
             {[
               { title: "Grounded answers", description: "Every answer is tied to your actual documents, not generic training data." },
               { title: "Source citations", description: "Show customers exactly where information came from." },
-              { title: "Honest refusal", description: "If the answer isn't known, the bot says so instead of making it up." },
+              { title: "Honest refusal", description: "If the answer isn’t known, the bot says so instead of making it up." },
               { title: "Prompt injection protection", description: "Ignores hidden instructions inside documents to keep responses safe." },
               { title: "Hybrid retrieval", description: "Combines vector search and keyword matching for better relevance." },
               { title: "Conversation memory", description: "Understands follow-ups and maintains context across the chat." },
@@ -616,7 +616,7 @@ export default function Home() {
           <SectionHeading
             eyebrow="Account Options"
             title="Two ways to create your account."
-            subtitle="Sign up with Google for unlimited bots, or start instantly as a guest â€” no Google account required."
+            subtitle="Sign up with Google for unlimited bots, or start instantly as a guest — no Google account required."
           />
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             {/* Google account */}
@@ -690,7 +690,7 @@ export default function Home() {
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-gray-500">
-            Start as a guest and continue with Google later â€” your bots stay with you.
+            Start as a guest and continue with Google later — your bots stay with you.
           </p>
         </div>
       </section>
@@ -741,7 +741,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-10 border-t border-border pt-6 text-xs text-gray-500">
-            Â© {new Date().getFullYear()} DeskMind. All rights reserved.
+            © {new Date().getFullYear()} DeskMind. All rights reserved.
           </div>
         </div>
       </footer>

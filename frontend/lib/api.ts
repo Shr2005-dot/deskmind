@@ -76,6 +76,14 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
     if (!err.response) {
       return `Cannot reach the DeskMind server at ${API_BASE_URL}. Make sure the backend is running, then try again.`;
     }
+
+    // A gateway/proxy error page (Cloudflare answers with HTML and no CORS
+    // headers of its own) leaves no ``detail`` to read, so a 5xx would
+    // otherwise surface as axios' bare "Request failed with status code 502".
+    const status = err.response.status;
+    if (typeof status === "number" && status >= 500) {
+      return `DeskMind's servers are having trouble right now (HTTP ${status}). Please try again in a moment.`;
+    }
   }
   return err instanceof Error && err.message ? err.message : fallback;
 }

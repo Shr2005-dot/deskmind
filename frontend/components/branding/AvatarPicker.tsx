@@ -145,7 +145,7 @@ export function AvatarPicker({ value, onChange, botId }: AvatarPickerProps) {
                     <Image src={src} alt={`Avatar option`} width={40} height={40} className="h-9 w-9" />
                     {isSelected && (
                       <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-primary-contrast text-[10px]">
-                        âœ“
+                        ✓
                       </span>
                     )}
                   </button>

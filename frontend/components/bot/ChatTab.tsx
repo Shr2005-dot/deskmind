@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import toast from "react-hot-toast";
-import { sendChatMessage, createLead } from "@/lib/api";
+import { sendChatMessage, createLead, getApiErrorMessage } from "@/lib/api";
 
 interface ChatTabProps {
   botId: string;
@@ -98,11 +98,9 @@ export function ChatTab({ botId, botName }: ChatTabProps) {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail ||
-        (err instanceof Error ? err.message : "Chat failed");
-      toast.error(message);
+      // ``getApiErrorMessage`` explains connection-level failures instead of
+      // showing axios' bare "Network Error" (see lib/api.ts).
+      toast.error(getApiErrorMessage(err, "Chat failed. Please try again."));
     } finally {
       setSending(false);
       setIsTyping(false);

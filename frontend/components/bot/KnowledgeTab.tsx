@@ -105,7 +105,7 @@ function StatusBadge({ status }: { status: string }) {
     processing: "Processing",
   };
   // Detailed failure statuses look like "failed: chunking (website returned
-  // an error (status 403))" â€” show them in red even though they are not the
+  // an error (status 403))" — show them in red even though they are not the
   // bare "failed" key.
   const isFailed = status.startsWith("failed");
   return (

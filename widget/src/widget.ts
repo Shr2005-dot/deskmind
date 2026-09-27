@@ -444,8 +444,19 @@ async function sendMessage(config: DeskMindConfig, messagesContainer: HTMLElemen
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(errorText || `HTTP ${response.status}`)
+      // The backend normally answers 200 even when a provider is down, so a
+      // non-OK status here means an infrastructure failure (proxy/gateway page,
+      // which is often HTML). Never dump that raw markup into the chat bubble.
+      let reason = `HTTP ${response.status}`
+      try {
+        const body = (await response.clone().json()) as { detail?: unknown }
+        if (typeof body.detail === 'string' && body.detail.trim()) {
+          reason = body.detail
+        }
+      } catch {
+        reason = 'The assistant is temporarily unavailable. Please try again.'
+      }
+      throw new Error(reason)
     }
 
     const data = (await response.json()) as ChatResponse
