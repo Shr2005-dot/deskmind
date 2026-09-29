@@ -6,6 +6,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from app.utils.db_url import normalize_database_url
+
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 logger = logging.getLogger(__name__)
@@ -14,12 +16,14 @@ logger = logging.getLogger(__name__)
 # Core app settings
 # ---------------------------------------------------------------------------
 SUPABASE_DATABASE_URL: str | None = os.getenv("SUPABASE_DATABASE_URL")
-DATABASE_URL: str = os.getenv(
-    "SUPABASE_DATABASE_URL",
+DATABASE_URL: str = normalize_database_url(
     os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg2://user:password@localhost:5432/deskmind",
-    ),
+        "SUPABASE_DATABASE_URL",
+        os.getenv(
+            "DATABASE_URL",
+            "postgresql+psycopg2://user:password@localhost:5432/deskmind",
+        ),
+    )
 )
 
 # ---------------------------------------------------------------------------

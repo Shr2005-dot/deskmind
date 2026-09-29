@@ -1,6 +1,9 @@
 fastapi[standard]
 uvicorn
-sqlalchemy
+# Pinned below 2.1: 2.1 resolves the psycopg (v3) driver for driverless
+# postgresql:// URLs, while this project installs psycopg2-binary. See
+# app/utils/db_url.py, which also pins the driver in the URL itself.
+sqlalchemy>=2.0,<2.1
 psycopg2-binary
 pgvector
 python-dotenv

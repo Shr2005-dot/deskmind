@@ -48,3 +48,19 @@ The configured Groq model (`GROQ_MODEL`, default `openai/gpt-oss-120b`) is verif
 ### Tradeoffs
 - Fallback models differ slightly in style and quality; the warning log records which model served a request.
 - One extra `models.list()` call per process.
+
+## The Database URL Always Names Its Driver (psycopg2)
+
+**Date:** 2026-09-29
+
+### Decision
+`app/utils/db_url.py` rewrites driverless Postgres URLs (`postgres://`, `postgresql://`) to `postgresql+psycopg2://` before any engine is created — in `app/config.py`, `app/db/__init__.py` and `alembic/env.py` — and `requirements.txt` pins `sqlalchemy>=2.0,<2.1`.
+
+### Rationale
+- A driverless `postgresql://` URL leaves the DBAPI choice to SQLAlchemy: 2.0 resolves psycopg2, 2.1 resolves psycopg (v3). This project installs `psycopg2-binary`, so the image built on 2026-09-29 (which resolved SQLAlchemy 2.1.1) died at import with `ModuleNotFoundError: No module named 'psycopg'` and the deployment never passed its verification step; the previous revision kept serving.
+- `requirements.txt` was completely unpinned, so an unrelated dependency release could take the API down with no code change.
+- Naming the driver in the URL makes the behaviour independent of whichever SQLAlchemy release a build resolves, and covering `alembic/env.py` keeps migrations consistent with the app.
+
+### Tradeoffs
+- Adopting psycopg v3 later means changing the normalizer (or supplying a URL that already names `+psycopg`) and relaxing the pin.
+- The SQLAlchemy pin needs revisiting once the test suite is verified against 2.1.

@@ -8,6 +8,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.db import Base
 from app import models  # noqa: F401 — ensures all models are registered on Base.metadata
+from app.utils.db_url import normalize_database_url
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -23,7 +24,7 @@ def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=normalize_database_url(url) if url else url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -35,7 +36,8 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    database_url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL")
+    raw_database_url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL")
+    database_url = normalize_database_url(raw_database_url) if raw_database_url else ""
     if database_url:
         connectable = engine_from_config(
             {"sqlalchemy.url": database_url},
