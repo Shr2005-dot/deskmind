@@ -318,7 +318,12 @@ npm install
 npm run build
 ```
 
-The built widget is served from the backend at `/widget.js`.
+The built widget is served from the backend at `/widget.js`. Because the deploy
+only uploads `backend/`, copy the bundle where it ships from:
+
+```bash
+cp widget/dist/widget.iife.js backend/static/widget.iife.js
+```
 
 ### Running Tests
 
@@ -364,6 +369,14 @@ npm run build          # production build (also serves as the TypeScript check)
 **Widget.**
 
 `npm run build` in `widget/` regenerates `widget/dist/widget.iife.js` (IIFE build) plus an ES module build at `widget/dist/widget.js`.
+
+`widget/dist` is git-ignored and FastAPI Cloud only uploads `backend/`, so the release step is to copy the IIFE bundle to the committed location that `/widget.js` serves from:
+
+```bash
+cp widget/dist/widget.iife.js backend/static/widget.iife.js
+```
+
+`backend/tests/test_widget_bundle.py` fails when that committed copy is missing, so the embed snippet can never silently 404 in production again.
 
 > **Chat endpoint contract:** `POST /bots/{bot_id}/chat` always answers `200 OK` with a JSON body, even when Groq or Voyage AI is rate-limited or unavailable — the answer then explains that the service is temporarily unavailable. The deployed backend sits behind Cloudflare, which replaces 5xx bodies with its own HTML error page (no CORS headers), so a 5xx would reach the browser as an opaque `Network Error`. Provider failures are logged as `Retrieval failed for bot ...` / `Generation failed for bot ...` instead.
 

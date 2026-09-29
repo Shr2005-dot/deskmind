@@ -130,16 +130,24 @@ app.include_router(activity.router)
 # We serve the built IIFE bundle from the backend so the embed snippet works
 # with a single script tag and the widget can auto-discover the API base URL
 # from its own script origin.
+#
+# Two locations are searched: the freshly built ``widget/dist`` bundle (the
+# local development layout) and ``backend/static/``, which holds the committed
+# copy that ships with a deployment. FastAPI Cloud uploads only ``backend/``,
+# and ``dist/`` is git-ignored, so ``widget/dist`` cannot be committed itself —
+# keeping the committed copy is the release step described in the README.
 # ---------------------------------------------------------------------------
-WIDGET_JS_PATH = (
-    Path(__file__).resolve().parent.parent / "widget" / "dist" / "widget.iife.js"
+WIDGET_JS_PATHS = (
+    Path(__file__).resolve().parent.parent / "widget" / "dist" / "widget.iife.js",
+    Path(__file__).resolve().parent.parent / "static" / "widget.iife.js",
 )
 
 
 @app.get("/widget.js", include_in_schema=False)
 def widget_js():
-    if WIDGET_JS_PATH.exists():
-        return FileResponse(WIDGET_JS_PATH, media_type="application/javascript")
+    for path in WIDGET_JS_PATHS:
+        if path.exists():
+            return FileResponse(path, media_type="application/javascript")
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Widget bundle not found. Build it with `npm run build` in the widget/ directory."},
