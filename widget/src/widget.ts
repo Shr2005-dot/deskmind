@@ -48,6 +48,19 @@ export interface ChatResponse {
 const WIDGET_ID = 'deskmind-widget-root'
 const DEFAULT_COLOR = '#2563eb'
 
+// How long to wait for a chat answer before giving up. RAG retrieval plus LLM
+// generation can legitimately take a while, but a request that never settles
+// (flaky mobile connection, dropped socket) must not leave the widget spinning
+// forever with no feedback.
+const REQUEST_TIMEOUT_MS = 60_000
+const EMPTY_ANSWER_FALLBACK =
+  "I'm sorry, I couldn't generate an answer just now. Please try again."
+
+// Conversation ids are scoped per bot. A single global key meant a stored id
+// from one bot (or a conversation deleted server-side) was reused for another
+// bot, which the API rejects with 404 — permanently breaking that browser tab.
+const CONVERSATION_KEY_PREFIX = 'deskmind_conversation_id:'
+
 function findWidgetScript(): HTMLScriptElement | null {
   const scripts = Array.from(document.querySelectorAll<HTMLScriptElement>('script'))
   return scripts.find((s) => /widget(\.iife)?\.js/.test(s.src || '')) || null
@@ -93,29 +106,34 @@ async function fetchBotConfig(config: DeskMindConfig): Promise<BotConfig | null>
   }
 }
 
-function getConversationId(): string | null {
+function getConversationId(botId: string): string | null {
   try {
-    return sessionStorage.getItem('deskmind_conversation_id')
+    return sessionStorage.getItem(`${CONVERSATION_KEY_PREFIX}${botId}`)
   } catch {
     return null
   }
 }
 
-function setConversationId(id: string | null): void {
+function setConversationId(botId: string, id: string | null): void {
   try {
+    const key = `${CONVERSATION_KEY_PREFIX}${botId}`
     if (id) {
-      sessionStorage.setItem('deskmind_conversation_id', id)
+      sessionStorage.setItem(key, id)
     } else {
-      sessionStorage.removeItem('deskmind_conversation_id')
+      sessionStorage.removeItem(key)
     }
   } catch {
-    // ignore storage errors
+    // ignore storage errors (private browsing / storage disabled)
   }
 }
 
 function buildWidgetHTML(): string {
   return `
-    <button id="deskmind-launcher" aria-label="Open chat">Chat</button>
+    <button id="deskmind-launcher" aria-label="Open chat">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      </svg>
+    </button>
     <div id="deskmind-window" hidden>
       <div id="deskmind-header">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -153,8 +171,13 @@ function buildWidgetStyles(color: string): string {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+    #deskmind-launcher svg { display: block; }
+    #deskmind-launcher:hover { transform: scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.22); }
+    #deskmind-launcher:active { transform: scale(0.96); }
     #deskmind-window {
       position: fixed;
       bottom: 88px;
@@ -195,6 +218,8 @@ function buildWidgetStyles(color: string): string {
     #deskmind-messages {
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -224,6 +249,7 @@ function buildWidgetStyles(color: string): string {
       cursor: pointer;
       font-size: 14px;
     }
+    #deskmind-send:disabled { opacity: 0.55; cursor: not-allowed; }
     .deskmind-message { max-width: 85%; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
     .deskmind-message-user { align-self: flex-end; background: ${color}; color: #fff; border-bottom-right-radius: 2px; }
     .deskmind-message-assistant { align-self: flex-start; background: #f3f4f6; color: #111827; border-bottom-left-radius: 2px; }
@@ -301,6 +327,36 @@ function buildWidgetStyles(color: string): string {
   }
   .deskmind-lead-submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .deskmind-lead-status { font-size: 12px; color: #166534; margin: 8px 0 0; }
+  .deskmind-typing { display: inline-flex; align-items: center; gap: 5px; min-height: 18px; padding: 12px; }
+  .deskmind-typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #9ca3af;
+    animation: deskmind-bounce 1.2s infinite ease-in-out;
+  }
+  .deskmind-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .deskmind-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes deskmind-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.45; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+  @media (max-width: 480px) {
+    #deskmind-window {
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+      height: calc(100dvh - 110px);
+      max-height: calc(100dvh - 110px);
+    }
+    #deskmind-launcher { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+    /* 16px prevents iOS Safari from auto-zooming (and shifting the layout)
+       when the field receives focus. */
+    #deskmind-input,
+    .deskmind-lead-email { font-size: 16px; }
+  }
   `
 }
 
@@ -431,48 +487,116 @@ function buildLeadPrompt(
   return container
 }
 
-async function sendMessage(config: DeskMindConfig, messagesContainer: HTMLElement, input: HTMLInputElement, text: string): Promise<void> {
-  appendMessage(messagesContainer, 'user', text)
+function createTypingIndicator(): HTMLElement {
+  const bubble = document.createElement('div')
+  bubble.className = 'deskmind-message deskmind-message-assistant deskmind-typing'
+  bubble.setAttribute('role', 'status')
+  bubble.setAttribute('aria-label', 'Assistant is typing')
+  for (let i = 0; i < 3; i += 1) {
+    const dot = document.createElement('span')
+    dot.className = 'deskmind-typing-dot'
+    bubble.appendChild(dot)
+  }
+  return bubble
+}
 
-  const conversationId = getConversationId()
+async function describeErrorResponse(response: Response): Promise<string> {
   try {
-    const url = `${config.apiUrl}/bots/${encodeURIComponent(config.botId)}/chat`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, conversation_id: conversationId } satisfies ChatRequest),
-    })
+    const body = (await response.clone().json()) as { detail?: unknown }
+    if (typeof body.detail === 'string' && body.detail.trim()) {
+      return body.detail
+    }
+  } catch {
+    // Not JSON (often an HTML gateway page) — fall through to a generic message.
+  }
+  return `The assistant is temporarily unavailable (HTTP ${response.status}). Please try again.`
+}
+
+// Guards against overlapping sends (double-tap on mobile, rapid Enter presses)
+// which used to race the same conversation and produce spurious errors.
+let sending = false
+
+async function sendMessage(config: DeskMindConfig, messagesContainer: HTMLElement, input: HTMLInputElement, text: string): Promise<void> {
+  const question = text.trim()
+  if (!question || sending) return
+
+  sending = true
+
+  // Echo the question immediately and clear the composer *before* the request,
+  // so the user's message never lingers in the input bar while the bot thinks.
+  appendMessage(messagesContainer, 'user', question)
+  input.value = ''
+
+  const sendButton = input.form?.querySelector<HTMLButtonElement>('button[type="submit"]') ?? null
+  if (sendButton) sendButton.disabled = true
+
+  // Reassure the user the assistant is working instead of leaving a blank panel.
+  const typing = createTypingIndicator()
+  messagesContainer.appendChild(typing)
+  messagesContainer.scrollTop = messagesContainer.scrollHeight
+
+  const endpoint = `${config.apiUrl}/bots/${encodeURIComponent(config.botId)}/chat`
+
+  const post = async (conversationId: string | null): Promise<Response> => {
+    // Abort a request that never settles so the widget cannot spin forever on a
+    // flaky mobile connection.
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      return await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: question, conversation_id: conversationId } satisfies ChatRequest),
+        signal: controller.signal,
+      })
+    } finally {
+      window.clearTimeout(timer)
+    }
+  }
+
+  try {
+    let response = await post(getConversationId(config.botId))
+
+    // A stored conversation can be stale — it may belong to a different bot or
+    // have been removed server-side. Recover by starting a fresh conversation
+    // instead of failing every subsequent message.
+    if (response.status === 400 || response.status === 404) {
+      setConversationId(config.botId, null)
+      response = await post(null)
+    }
 
     if (!response.ok) {
       // The backend normally answers 200 even when a provider is down, so a
       // non-OK status here means an infrastructure failure (proxy/gateway page,
       // which is often HTML). Never dump that raw markup into the chat bubble.
-      let reason = `HTTP ${response.status}`
-      try {
-        const body = (await response.clone().json()) as { detail?: unknown }
-        if (typeof body.detail === 'string' && body.detail.trim()) {
-          reason = body.detail
-        }
-      } catch {
-        reason = 'The assistant is temporarily unavailable. Please try again.'
-      }
-      throw new Error(reason)
+      throw new Error(await describeErrorResponse(response))
     }
 
     const data = (await response.json()) as ChatResponse
-    setConversationId(data.conversation_id)
-    appendMessage(messagesContainer, 'assistant', data.answer, data.sources)
+    setConversationId(config.botId, data.conversation_id)
+    appendMessage(messagesContainer, 'assistant', data.answer || EMPTY_ANSWER_FALLBACK, data.sources)
     // Only offer lead capture when the bot explicitly signals it is relevant.
     if (data.prompt_for_email) {
-      messagesContainer.appendChild(buildLeadPrompt(config, text))
+      messagesContainer.appendChild(buildLeadPrompt(config, question))
       messagesContainer.scrollTop = messagesContainer.scrollHeight
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Something went wrong'
+    const message =
+      error instanceof DOMException && error.name === 'AbortError'
+        ? 'That took longer than expected. Check your connection and try again.'
+        : error instanceof Error
+          ? error.message
+          : 'Something went wrong'
     appendMessage(messagesContainer, 'error', `Error: ${message}`)
   } finally {
-    input.value = ''
-    input.focus()
+    typing.remove()
+    sending = false
+    if (sendButton) sendButton.disabled = false
+    try {
+      input.focus()
+    } catch {
+      // Focusing is best-effort (some embedded browsers block it).
+    }
   }
 }
 
@@ -556,7 +680,6 @@ export async function initWidget(cfg?: DeskMindConfig): Promise<void> {
     botConfig?.suggested_questions || [],
     displayName,
     (text) => {
-      input.value = text
       sendMessage(config, messagesContainer, input, text)
     },
   )

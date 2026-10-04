@@ -1,5 +1,9 @@
-var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{value:`Module`});var t=`deskmind-widget-root`,n=`#2563eb`;function r(){return Array.from(document.querySelectorAll(`script`)).find(e=>/widget(\.iife)?\.js/.test(e.src||``))||null}function i(){let e=window.DeskMindConfig;if(e&&e.botId)return{botId:e.botId,apiUrl:e.apiUrl||window.location.origin};let t=r(),n=t?.getAttribute(`data-bot-id`);if(n)return{botId:n,apiUrl:t?.getAttribute(`data-api-url`)||(t?.src?new URL(t.src).origin:window.location.origin)};throw Error(`DeskMindConfig or data-bot-id is required to initialize the widget`)}async function a(e){let t=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/config`;try{let e=await fetch(t);return e.ok?await e.json():null}catch{return null}}function o(){try{return sessionStorage.getItem(`deskmind_conversation_id`)}catch{return null}}function s(e){try{e?sessionStorage.setItem(`deskmind_conversation_id`,e):sessionStorage.removeItem(`deskmind_conversation_id`)}catch{}}function c(){return`
-    <button id="deskmind-launcher" aria-label="Open chat">Chat</button>
+var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{value:`Module`});var t=`deskmind-widget-root`,n=`#2563eb`,r=6e4,i=`I'm sorry, I couldn't generate an answer just now. Please try again.`,a=`deskmind_conversation_id:`;function o(){return Array.from(document.querySelectorAll(`script`)).find(e=>/widget(\.iife)?\.js/.test(e.src||``))||null}function s(){let e=window.DeskMindConfig;if(e&&e.botId)return{botId:e.botId,apiUrl:e.apiUrl||window.location.origin};let t=o(),n=t?.getAttribute(`data-bot-id`);if(n)return{botId:n,apiUrl:t?.getAttribute(`data-api-url`)||(t?.src?new URL(t.src).origin:window.location.origin)};throw Error(`DeskMindConfig or data-bot-id is required to initialize the widget`)}async function c(e){let t=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/config`;try{let e=await fetch(t);return e.ok?await e.json():null}catch{return null}}function l(e){try{return sessionStorage.getItem(`${a}${e}`)}catch{return null}}function u(e,t){try{let n=`${a}${e}`;t?sessionStorage.setItem(n,t):sessionStorage.removeItem(n)}catch{}}function d(){return`
+    <button id="deskmind-launcher" aria-label="Open chat">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      </svg>
+    </button>
     <div id="deskmind-window" hidden>
       <div id="deskmind-header">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -14,7 +18,7 @@ var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{valu
         <button type="submit" id="deskmind-send">Send</button>
       </form>
     </div>
-  `}function l(e){return`
+  `}function f(e){return`
     * { box-sizing: border-box; }
     #deskmind-launcher {
       position: fixed;
@@ -33,8 +37,13 @@ var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{valu
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+    #deskmind-launcher svg { display: block; }
+    #deskmind-launcher:hover { transform: scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.22); }
+    #deskmind-launcher:active { transform: scale(0.96); }
     #deskmind-window {
       position: fixed;
       bottom: 88px;
@@ -75,6 +84,8 @@ var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{valu
     #deskmind-messages {
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -104,6 +115,7 @@ var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{valu
       cursor: pointer;
       font-size: 14px;
     }
+    #deskmind-send:disabled { opacity: 0.55; cursor: not-allowed; }
     .deskmind-message { max-width: 85%; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
     .deskmind-message-user { align-self: flex-end; background: ${e}; color: #fff; border-bottom-right-radius: 2px; }
     .deskmind-message-assistant { align-self: flex-start; background: #f3f4f6; color: #111827; border-bottom-left-radius: 2px; }
@@ -181,4 +193,34 @@ var DeskMindWidget=(function(e){Object.defineProperty(e,Symbol.toStringTag,{valu
   }
   .deskmind-lead-submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .deskmind-lead-status { font-size: 12px; color: #166534; margin: 8px 0 0; }
-  `}function u(e,t,n){let r=document.createElement(`div`);r.className=`deskmind-message deskmind-message-${e}`;let i=document.createElement(`div`);if(i.textContent=t,r.appendChild(i),n&&n.length>0){let e=document.createElement(`button`);e.className=`deskmind-sources-toggle`,e.textContent=`View sources (${n.length})`,r.appendChild(e);let t=document.createElement(`div`);t.className=`deskmind-sources-list`,t.hidden=!0;for(let e of n){let n=document.createElement(`div`);n.className=`deskmind-source-card`;let r=document.createElement(`div`);r.className=`deskmind-source-filename`,r.textContent=e.document_filename;let i=document.createElement(`div`);i.className=`deskmind-source-content`,i.textContent=e.chunk_content;let a=document.createElement(`div`);a.className=`deskmind-source-score`,a.textContent=`${Math.round(e.similarity_score*100)}% match`,n.appendChild(r),n.appendChild(i),n.appendChild(a),t.appendChild(n)}r.appendChild(t),e.addEventListener(`click`,()=>{let r=t.hidden;t.hidden=!r,e.textContent=r?`Hide sources`:`View sources (${n.length})`})}return r}function d(e,t,n,r){let i=u(t,n,r);e.appendChild(i),e.scrollTop=e.scrollHeight}function f(e,t){let n=document.createElement(`div`);n.className=`deskmind-lead`,n.setAttribute(`data-question`,t);let r=document.createElement(`p`);r.className=`deskmind-lead-label`,r.textContent=`Didn't find what you needed? Leave your email and we'll follow up.`,n.appendChild(r);let i=document.createElement(`div`);i.className=`deskmind-lead-row`;let a=document.createElement(`input`);a.type=`email`,a.placeholder=`you@example.com`,a.className=`deskmind-lead-email`;let o=document.createElement(`button`);o.type=`button`,o.className=`deskmind-lead-submit`,o.textContent=`Send`,o.disabled=!0;let s=document.createElement(`p`);return s.className=`deskmind-lead-status`,s.hidden=!0,i.appendChild(a),i.appendChild(o),n.appendChild(i),n.appendChild(s),a.addEventListener(`input`,()=>{let e=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.value.trim());o.disabled=!e}),o.addEventListener(`click`,async()=>{let n=a.value.trim();if(n){o.disabled=!0,o.textContent=`Sending...`;try{let r=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/leads`;if(!(await fetch(r,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({email:n,question:t})})).ok)throw Error(`Request failed`);s.textContent=`Thanks! We’ll follow up by email.`,s.hidden=!1,i.hidden=!0}catch{s.textContent=`Something went wrong. Please try again.`,s.hidden=!1,o.disabled=!1,o.textContent=`Send`}}}),n}async function p(e,t,n,r){d(t,`user`,r);let i=o();try{let n=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/chat`,a=await fetch(n,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({message:r,conversation_id:i})});if(!a.ok){let e=`HTTP ${a.status}`;try{let t=await a.clone().json();typeof t.detail==`string`&&t.detail.trim()&&(e=t.detail)}catch{e=`The assistant is temporarily unavailable. Please try again.`}throw Error(e)}let o=await a.json();s(o.conversation_id),d(t,`assistant`,o.answer,o.sources),o.prompt_for_email&&(t.appendChild(f(e,r)),t.scrollTop=t.scrollHeight)}catch(e){d(t,`error`,`Error: ${e instanceof Error?e.message:`Something went wrong`}`)}finally{n.value=``,n.focus()}}function m(e,t,n,r){let i=document.createElement(`div`);i.className=`deskmind-welcome`;let a=document.createElement(`div`),o=`Hi! I'm ${n}, your AI assistant. How can I help you today?`;if(a.textContent=e||o,i.appendChild(a),t.length>0){let e=document.createElement(`div`);e.className=`deskmind-chips`;for(let n of t){let t=document.createElement(`button`);t.type=`button`,t.className=`deskmind-chip`,t.textContent=n,t.addEventListener(`click`,()=>{r(n),i.remove()}),e.appendChild(t)}i.appendChild(e)}return i}var h=!1;async function g(e){if(h||document.getElementById(t))return;h=!0;let r=e??i(),o=await a(r),s=o?.widget_color||n,u=o?.widget_name||o?.name||`Chat`,d=document.createElement(`div`);d.id=t;let f=d.attachShadow({mode:`open`});f.innerHTML=c();let g=document.createElement(`style`);g.textContent=l(s),f.appendChild(g),document.body.appendChild(d);let _=f.querySelector(`#deskmind-launcher`),v=f.querySelector(`#deskmind-window`),y=f.querySelector(`#deskmind-close`),b=f.querySelector(`#deskmind-title`),x=f.querySelector(`#deskmind-form`),S=f.querySelector(`#deskmind-input`),C=f.querySelector(`#deskmind-messages`);if(b.textContent=u,o?.avatar){let e=f.querySelector(`#deskmind-avatar`);e.src=o.avatar,e.alt=u,e.style.display=`block`}let w=m(o?.welcome_message||``,o?.suggested_questions||[],u,e=>{S.value=e,p(r,C,S,e)});C.appendChild(w);let T=e=>{e?(v.hidden=!1,_.hidden=!0,S.focus()):(v.hidden=!0,_.hidden=!1)};_.addEventListener(`click`,()=>T(!0)),y.addEventListener(`click`,()=>T(!1)),x.addEventListener(`submit`,e=>{e.preventDefault();let t=S.value.trim();t&&p(r,C,S,t)})}function _(){try{if(typeof document>`u`)return;let e=()=>{g().catch(()=>{h=!1})};document.readyState===`loading`?document.addEventListener(`DOMContentLoaded`,e):e()}catch{}}return _(),e.initWidget=g,e})({});
+  .deskmind-typing { display: inline-flex; align-items: center; gap: 5px; min-height: 18px; padding: 12px; }
+  .deskmind-typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #9ca3af;
+    animation: deskmind-bounce 1.2s infinite ease-in-out;
+  }
+  .deskmind-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .deskmind-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes deskmind-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.45; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+  @media (max-width: 480px) {
+    #deskmind-window {
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+      height: calc(100dvh - 110px);
+      max-height: calc(100dvh - 110px);
+    }
+    #deskmind-launcher { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+    /* 16px prevents iOS Safari from auto-zooming (and shifting the layout)
+       when the field receives focus. */
+    #deskmind-input,
+    .deskmind-lead-email { font-size: 16px; }
+  }
+  `}function p(e,t,n){let r=document.createElement(`div`);r.className=`deskmind-message deskmind-message-${e}`;let i=document.createElement(`div`);if(i.textContent=t,r.appendChild(i),n&&n.length>0){let e=document.createElement(`button`);e.className=`deskmind-sources-toggle`,e.textContent=`View sources (${n.length})`,r.appendChild(e);let t=document.createElement(`div`);t.className=`deskmind-sources-list`,t.hidden=!0;for(let e of n){let n=document.createElement(`div`);n.className=`deskmind-source-card`;let r=document.createElement(`div`);r.className=`deskmind-source-filename`,r.textContent=e.document_filename;let i=document.createElement(`div`);i.className=`deskmind-source-content`,i.textContent=e.chunk_content;let a=document.createElement(`div`);a.className=`deskmind-source-score`,a.textContent=`${Math.round(e.similarity_score*100)}% match`,n.appendChild(r),n.appendChild(i),n.appendChild(a),t.appendChild(n)}r.appendChild(t),e.addEventListener(`click`,()=>{let r=t.hidden;t.hidden=!r,e.textContent=r?`Hide sources`:`View sources (${n.length})`})}return r}function m(e,t,n,r){let i=p(t,n,r);e.appendChild(i),e.scrollTop=e.scrollHeight}function h(e,t){let n=document.createElement(`div`);n.className=`deskmind-lead`,n.setAttribute(`data-question`,t);let r=document.createElement(`p`);r.className=`deskmind-lead-label`,r.textContent=`Didn't find what you needed? Leave your email and we'll follow up.`,n.appendChild(r);let i=document.createElement(`div`);i.className=`deskmind-lead-row`;let a=document.createElement(`input`);a.type=`email`,a.placeholder=`you@example.com`,a.className=`deskmind-lead-email`;let o=document.createElement(`button`);o.type=`button`,o.className=`deskmind-lead-submit`,o.textContent=`Send`,o.disabled=!0;let s=document.createElement(`p`);return s.className=`deskmind-lead-status`,s.hidden=!0,i.appendChild(a),i.appendChild(o),n.appendChild(i),n.appendChild(s),a.addEventListener(`input`,()=>{let e=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.value.trim());o.disabled=!e}),o.addEventListener(`click`,async()=>{let n=a.value.trim();if(n){o.disabled=!0,o.textContent=`Sending...`;try{let r=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/leads`;if(!(await fetch(r,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({email:n,question:t})})).ok)throw Error(`Request failed`);s.textContent=`Thanks! We’ll follow up by email.`,s.hidden=!1,i.hidden=!0}catch{s.textContent=`Something went wrong. Please try again.`,s.hidden=!1,o.disabled=!1,o.textContent=`Send`}}}),n}function g(){let e=document.createElement(`div`);e.className=`deskmind-message deskmind-message-assistant deskmind-typing`,e.setAttribute(`role`,`status`),e.setAttribute(`aria-label`,`Assistant is typing`);for(let t=0;t<3;t+=1){let t=document.createElement(`span`);t.className=`deskmind-typing-dot`,e.appendChild(t)}return e}async function _(e){try{let t=await e.clone().json();if(typeof t.detail==`string`&&t.detail.trim())return t.detail}catch{}return`The assistant is temporarily unavailable (HTTP ${e.status}). Please try again.`}var v=!1;async function y(e,t,n,a){let o=a.trim();if(!o||v)return;v=!0,m(t,`user`,o),n.value=``;let s=n.form?.querySelector(`button[type="submit"]`)??null;s&&(s.disabled=!0);let c=g();t.appendChild(c),t.scrollTop=t.scrollHeight;let d=`${e.apiUrl}/bots/${encodeURIComponent(e.botId)}/chat`,f=async e=>{let t=new AbortController,n=window.setTimeout(()=>t.abort(),r);try{return await fetch(d,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({message:o,conversation_id:e}),signal:t.signal})}finally{window.clearTimeout(n)}};try{let n=await f(l(e.botId));if((n.status===400||n.status===404)&&(u(e.botId,null),n=await f(null)),!n.ok)throw Error(await _(n));let r=await n.json();u(e.botId,r.conversation_id),m(t,`assistant`,r.answer||i,r.sources),r.prompt_for_email&&(t.appendChild(h(e,o)),t.scrollTop=t.scrollHeight)}catch(e){m(t,`error`,`Error: ${e instanceof DOMException&&e.name===`AbortError`?`That took longer than expected. Check your connection and try again.`:e instanceof Error?e.message:`Something went wrong`}`)}finally{c.remove(),v=!1,s&&(s.disabled=!1);try{n.focus()}catch{}}}function b(e,t,n,r){let i=document.createElement(`div`);i.className=`deskmind-welcome`;let a=document.createElement(`div`),o=`Hi! I'm ${n}, your AI assistant. How can I help you today?`;if(a.textContent=e||o,i.appendChild(a),t.length>0){let e=document.createElement(`div`);e.className=`deskmind-chips`;for(let n of t){let t=document.createElement(`button`);t.type=`button`,t.className=`deskmind-chip`,t.textContent=n,t.addEventListener(`click`,()=>{r(n),i.remove()}),e.appendChild(t)}i.appendChild(e)}return i}var x=!1;async function S(e){if(x||document.getElementById(t))return;x=!0;let r=e??s(),i=await c(r),a=i?.widget_color||n,o=i?.widget_name||i?.name||`Chat`,l=document.createElement(`div`);l.id=t;let u=l.attachShadow({mode:`open`});u.innerHTML=d();let p=document.createElement(`style`);p.textContent=f(a),u.appendChild(p),document.body.appendChild(l);let m=u.querySelector(`#deskmind-launcher`),h=u.querySelector(`#deskmind-window`),g=u.querySelector(`#deskmind-close`),_=u.querySelector(`#deskmind-title`),v=u.querySelector(`#deskmind-form`),S=u.querySelector(`#deskmind-input`),C=u.querySelector(`#deskmind-messages`);if(_.textContent=o,i?.avatar){let e=u.querySelector(`#deskmind-avatar`);e.src=i.avatar,e.alt=o,e.style.display=`block`}let w=b(i?.welcome_message||``,i?.suggested_questions||[],o,e=>{y(r,C,S,e)});C.appendChild(w);let T=e=>{e?(h.hidden=!1,m.hidden=!0,S.focus()):(h.hidden=!0,m.hidden=!1)};m.addEventListener(`click`,()=>T(!0)),g.addEventListener(`click`,()=>T(!1)),v.addEventListener(`submit`,e=>{e.preventDefault();let t=S.value.trim();t&&y(r,C,S,t)})}function C(){try{if(typeof document>`u`)return;let e=()=>{S().catch(()=>{x=!1})};document.readyState===`loading`?document.addEventListener(`DOMContentLoaded`,e):e()}catch{}}return C(),e.initWidget=S,e})({});
