@@ -1,0 +1,13 @@
+# Local diagnostic/scratch scripts (not part of the app) - keep them off the server
+/dbcheck*.py
+/diagnose_*.py
+/generate_logic_pdf.py
+/groq_models.py
+/inspect_*.py
+/repair_bot_data.py
+/smoke_test.py
+/test_*.py
+/urlcheck.py
+/verify_*.py
+# Scratch output logs
+/*.txt
