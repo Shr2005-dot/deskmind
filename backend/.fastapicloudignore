@@ -1,4 +1,5 @@
-# Local diagnostic/scratch scripts (not part of the app) - keep them off the server
+# Local diagnostic/scratch scripts (not part of the app) - keep them off the server.
+# IMPORTANT: never add a broad *.txt rule here - requirements.txt must ship!
 /dbcheck*.py
 /diagnose_*.py
 /generate_logic_pdf.py
@@ -9,5 +10,20 @@
 /test_*.py
 /urlcheck.py
 /verify_*.py
-# Scratch output logs
-/*.txt
+/check_data.py
+/_*.py
+# Scratch output logs and reports
+/pytest_result.txt
+/testurl*_result.txt
+/test_all_bots_output_utf8.txt
+/urlcheck.txt
+/uuid_src.txt
+/vercheck.txt
+/_auth_pytest_result.txt
+/dbstate.log
+/server.log
+/server_err.log
+/ver.log
+/LOGIC_REPORT.md
+/LOGIC_REPORT.pdf
+/.google_certs_cache.json
