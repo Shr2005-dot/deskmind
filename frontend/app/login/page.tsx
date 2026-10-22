@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -79,7 +79,7 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-white px-4">
         <div className="w-full max-w-lg">
           <div className="flex justify-center mb-8">
-              <AuthLogo className="h-44 w-auto md:h-60" priority />
+              <AuthLogo className="h-16 w-auto" priority />
           </div>
 
           <div className="bg-white border border-border rounded-xl p-6 shadow-sm">
