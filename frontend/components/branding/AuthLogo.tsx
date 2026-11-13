@@ -8,7 +8,7 @@ interface AuthLogoProps {
 export function AuthLogo({ className = "", priority = false }: AuthLogoProps) {
   return (
     <img
-      src="/auth_logo.png"
+      src="/deskmind-logo-cropped.png"
       alt="DeskMind"
       className={`object-contain ${className}`}
     />

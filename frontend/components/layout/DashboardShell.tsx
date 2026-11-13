@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { AppLogo } from "@/components/branding/AppLogo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -65,6 +66,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               <div className={sidebarOpen ? "ml-2" : ""}>
                  <AppLogo className="h-6 w-auto md:h-7" />
               </div>
+              <ThemeToggle className="ml-auto" />
             </div>
           </div>
         )}

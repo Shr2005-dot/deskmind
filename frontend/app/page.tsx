@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AppLogo } from "@/components/branding/AppLogo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
@@ -259,6 +260,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <ThemeToggle />
               <Link
                 href="/login"
                 className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 transition-colors"
