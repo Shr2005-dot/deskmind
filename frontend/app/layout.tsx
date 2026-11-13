@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   // Support both schemes so browsers do not force-darken; the CSS in
   // globals.css follows prefers-color-scheme itself.
   colorScheme: "light dark",
+  icons: [
+    {
+      rel: "icon",
+      type: "image/svg+xml",
+      url: "/favicon.svg",
+    },
+  ],
 };
 
 export default function RootLayout({

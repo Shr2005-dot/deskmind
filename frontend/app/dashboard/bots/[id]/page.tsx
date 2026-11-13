@@ -7,6 +7,7 @@ import {
   getBot,
   getDocuments,
   getBotAnalytics,
+  updateBot,
   type Bot,
   type Document,
   type AnalyticsData,
@@ -113,6 +114,19 @@ export default function BotDetailPage() {
     setBot(updated);
   };
 
+  const handleToggleShowSources = useCallback(
+    async (checked: boolean) => {
+      if (!bot) return;
+      try {
+        const updated = await updateBot(bot.id, { show_sources: checked });
+        setBot(updated);
+      } catch (err: unknown) {
+        toast.error("Failed to update bot settings");
+      }
+    },
+    [bot],
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -144,6 +158,8 @@ export default function BotDetailPage() {
     <div className="min-h-screen bg-background">
       <BotHeader
         bot={bot}
+        showSources={bot.show_sources ?? true}
+        onToggleShowSources={handleToggleShowSources}
         onTestBot={() => setActiveTab("chat")}
         onDeploy={() => setActiveTab("embed")}
       />
