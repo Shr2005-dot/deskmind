@@ -79,31 +79,34 @@
   --gray-950: #030712;
 }
 
-/* Dark mode follows the OS/browser setting. The inverted neutrals keep
-   every hardcoded utility (bg-white cards, text-gray-900 headings,
-   bg-gray-50 fills, ...) readable: surfaces go deep slate, text steps go
-   light, fills and borders sit slightly lighter than the surface. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --surface: #1a2438;
-    --border: #2b3a54;
-    --muted: #94a3b8;
+/* Dark mode is applied through a data-theme attribute on <html> (set by
+   ThemeProvider). It always wins over the light defaults below, so a manual
+   light / dark / system choice is respected regardless of the OS. The OS
+   preference is only consulted when the user chooses "system". */
+[data-theme="dark"] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --surface: #1a2438;
+  --border: #2b3a54;
+  --muted: #94a3b8;
 
-    --gray-white: #1a2438;
-    --gray-50: #212d45;
-    --gray-100: #27354f;
-    --gray-200: #33425e;
-    --gray-300: #455571;
-    --gray-400: #8fa0b5;
-    --gray-500: #9daabb;
-    --gray-600: #adb8c6;
-    --gray-700: #c5cdd9;
-    --gray-800: #dfe5ed;
-    --gray-900: #f1f5f9;
-    --gray-950: #f8fafc;
-  }
+  --gray-white: #1a2438;
+  --gray-50: #212d45;
+  --gray-100: #27354f;
+  --gray-200: #33425e;
+  --gray-300: #455571;
+  --gray-400: #8fa0b5;
+  --gray-500: #9daabb;
+  --gray-600: #adb8c6;
+  --gray-700: #c5cdd9;
+  --gray-800: #dfe5ed;
+  --gray-900: #f1f5f9;
+  --gray-950: #f8fafc;
+}
+
+/* Smooth theme transitions when switching between light and dark. */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @theme inline {
@@ -139,6 +142,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Utility animations */
