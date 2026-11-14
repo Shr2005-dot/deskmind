@@ -55,30 +55,6 @@ export function BotHeader({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {onToggleShowSources && (
-            <label
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-within:outline-none focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-500"
-              aria-label={showSources ? "Showing sources" : "Hiding sources"}
-              title={showSources ? "Show sources: on" : "Show sources: off"}
-            >
-              <input
-                type="checkbox"
-                checked={showSources}
-                onChange={(e) => onToggleShowSources(e.target.checked)}
-                className="sr-only"
-              />
-              <span
-                className={`absolute inset-0 rounded-full transition-colors ${
-                  showSources ? "bg-primary-600" : "bg-gray-300"
-                }`}
-              />
-              <span
-                className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform ${
-                  showSources ? "translate-x-5" : "translate-x-1"
-                }`}
-              />
-            </label>
-          )}
           <Button variant="outline" size="sm" onClick={onTestBot}>
             <svg className="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
